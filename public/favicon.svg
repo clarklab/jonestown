@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="bg" cx="0.30" cy="0.22" r="0.95">
+      <stop offset="0%" stop-color="#ffb072" />
+      <stop offset="55%" stop-color="#d2602a" />
+      <stop offset="100%" stop-color="#3c1410" />
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)" />
+  <text
+    x="32" y="46"
+    text-anchor="middle"
+    font-family="'Instrument Serif', 'Iowan Old Style', Georgia, serif"
+    font-size="48"
+    font-style="italic"
+    fill="#1a0c08"
+  >J</text>
+</svg>
