@@ -1,15 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  getCouple,
+  getCurrentCoupleId,
   getCurrentUser,
   getPhotoUrl,
   getRestaurant,
+  listCouples,
   listDishes,
   listRestaurants,
   listVisits,
   onChange,
+  setCurrentCoupleId,
   setCurrentUser as dbSetCurrentUser,
 } from "./db";
 import type {
+  Couple,
   Dish,
   Restaurant,
   RestaurantAggregate,
@@ -18,9 +23,7 @@ import type {
 } from "./types";
 import { verdictFromRatings } from "./types";
 
-export function useTables(
-  tables: string[],
-): number {
+export function useTables(tables: string[]): number {
   const [tick, setTick] = useState(0);
   useEffect(() => {
     return onChange((table) => {
@@ -30,12 +33,68 @@ export function useTables(
   return tick;
 }
 
+// ------- Couple -------
+
+export function useCouples(): Couple[] {
+  const [list, setList] = useState<Couple[]>([]);
+  const tick = useTables(["couples"]);
+  useEffect(() => {
+    listCouples().then(setList);
+  }, [tick]);
+  return list;
+}
+
+export function useCurrentCouple(): Couple | null {
+  const [couple, setCouple] = useState<Couple | null>(null);
+  const tick = useTables(["couples", "meta"]);
+  useEffect(() => {
+    (async () => {
+      const id = await getCurrentCoupleId();
+      if (!id) {
+        setCouple(null);
+        return;
+      }
+      const c = await getCouple(id);
+      setCouple(c ?? null);
+    })();
+  }, [tick]);
+  return couple;
+}
+
+export function useSwitchCouple(): (id: string | null) => Promise<void> {
+  return (id) => setCurrentCoupleId(id);
+}
+
+// ------- Members within current couple -------
+
+export function useCurrentUser(): [UserId, (id: UserId) => void] {
+  const [user, setUser] = useState<UserId>("a");
+  const tick = useTables(["meta"]);
+  useEffect(() => {
+    getCurrentUser().then(setUser);
+  }, [tick]);
+  return [
+    user,
+    (id) => {
+      setUser(id);
+      void dbSetCurrentUser(id);
+    },
+  ];
+}
+
+// ------- Restaurants / Visits / Dishes (scoped to current couple) -------
+
 export function useRestaurants(): Restaurant[] {
+  const couple = useCurrentCouple();
   const [items, setItems] = useState<Restaurant[]>([]);
   const tick = useTables(["restaurants"]);
   useEffect(() => {
-    listRestaurants().then(setItems);
-  }, [tick]);
+    if (!couple) {
+      setItems([]);
+      return;
+    }
+    listRestaurants(couple.id).then(setItems);
+  }, [couple?.id, tick]);
   return items;
 }
 
@@ -50,11 +109,16 @@ export function useRestaurant(id: string | undefined): Restaurant | null {
 }
 
 export function useVisits(restaurantId?: string): Visit[] {
+  const couple = useCurrentCouple();
   const [items, setItems] = useState<Visit[]>([]);
   const tick = useTables(["visits"]);
   useEffect(() => {
-    listVisits(restaurantId).then(setItems);
-  }, [restaurantId, tick]);
+    if (!couple) {
+      setItems([]);
+      return;
+    }
+    listVisits({ coupleId: couple.id, restaurantId }).then(setItems);
+  }, [couple?.id, restaurantId, tick]);
   return items;
 }
 
@@ -62,46 +126,26 @@ export function useDishes(filter?: {
   restaurantId?: string;
   visitId?: string;
 }): Dish[] {
+  const couple = useCurrentCouple();
   const [items, setItems] = useState<Dish[]>([]);
   const tick = useTables(["dishes", "photos"]);
   const key = `${filter?.restaurantId ?? ""}|${filter?.visitId ?? ""}`;
   useEffect(() => {
-    listDishes(filter).then(setItems);
-  }, [key, tick]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!couple) {
+      setItems([]);
+      return;
+    }
+    listDishes({ coupleId: couple.id, ...filter }).then(setItems);
+  }, [couple?.id, key, tick]); // eslint-disable-line react-hooks/exhaustive-deps
   return items;
 }
 
 export function useAllVisits(): Visit[] {
-  const [items, setItems] = useState<Visit[]>([]);
-  const tick = useTables(["visits"]);
-  useEffect(() => {
-    listVisits().then(setItems);
-  }, [tick]);
-  return items;
+  return useVisits();
 }
 
 export function useAllDishes(): Dish[] {
-  const [items, setItems] = useState<Dish[]>([]);
-  const tick = useTables(["dishes"]);
-  useEffect(() => {
-    listDishes().then(setItems);
-  }, [tick]);
-  return items;
-}
-
-export function useCurrentUser(): [UserId, (id: UserId) => void] {
-  const [user, setUser] = useState<UserId>("clark");
-  const tick = useTables(["meta"]);
-  useEffect(() => {
-    getCurrentUser().then(setUser);
-  }, [tick]);
-  return [
-    user,
-    (id) => {
-      setUser(id);
-      void dbSetCurrentUser(id);
-    },
-  ];
+  return useDishes();
 }
 
 export function usePhotoUrl(photoId: string | undefined): string | undefined {
@@ -154,10 +198,10 @@ export function useAggregates(): {
       const vs = visitByRest[r.id] ?? [];
       const ds = dishByRest[r.id] ?? [];
       const ratingsByUser: Record<UserId, number[]> = {
-        clark: [],
-        angie: [],
+        a: [],
+        b: [],
       };
-      const visitsByUser: Record<UserId, number> = { clark: 0, angie: 0 };
+      const visitsByUser: Record<UserId, number> = { a: 0, b: 0 };
       let lastVisit = 0;
       for (const v of vs) {
         visitsByUser[v.userId] = (visitsByUser[v.userId] ?? 0) + 1;
@@ -168,15 +212,11 @@ export function useAggregates(): {
         ratingsByUser[d.userId].push(d.rating);
       }
 
-      const clarkAvg = avg(ratingsByUser.clark);
-      const angieAvg = avg(ratingsByUser.angie);
-      const both = clarkAvg !== undefined && angieAvg !== undefined;
-      const combined =
-        both
-          ? (clarkAvg! + angieAvg!) / 2
-          : (clarkAvg ?? angieAvg);
+      const aAvg = avg(ratingsByUser.a);
+      const bAvg = avg(ratingsByUser.b);
+      const both = aAvg !== undefined && bAvg !== undefined;
+      const combined = both ? (aAvg! + bAvg!) / 2 : (aAvg ?? bAvg);
 
-      // Top dishes by rating (max 3)
       const topDishes = [...ds]
         .sort((a, b) => b.rating - a.rating || b.createdAt - a.createdAt)
         .slice(0, 3);
@@ -188,13 +228,13 @@ export function useAggregates(): {
         lastVisit: lastVisit || undefined,
         dishCount: ds.length,
         ratingByUser: {
-          ...(clarkAvg !== undefined ? { clark: clarkAvg } : {}),
-          ...(angieAvg !== undefined ? { angie: angieAvg } : {}),
+          ...(aAvg !== undefined ? { a: aAvg } : {}),
+          ...(bAvg !== undefined ? { b: bAvg } : {}),
         },
         combinedRating: combined,
         bothRated: both,
         topDishes,
-        verdict: verdictFromRatings(clarkAvg, angieAvg),
+        verdict: verdictFromRatings(aAvg, bAvg),
       };
       return agg;
     });
@@ -202,7 +242,9 @@ export function useAggregates(): {
     const byId: Record<string, RestaurantAggregate> = {};
     for (const a of list) byId[a.restaurant.id] = a;
 
-    const ratedCount = list.filter((a) => a.combinedRating !== undefined).length;
+    const ratedCount = list.filter(
+      (a) => a.combinedRating !== undefined,
+    ).length;
     const bothRatedCount = list.filter((a) => a.bothRated).length;
 
     return {
@@ -215,7 +257,9 @@ export function useAggregates(): {
   }, [restaurants, visits, dishes]);
 }
 
-export function useAggregate(id: string | undefined): RestaurantAggregate | undefined {
+export function useAggregate(
+  id: string | undefined,
+): RestaurantAggregate | undefined {
   const { byId } = useAggregates();
   return id ? byId[id] : undefined;
 }

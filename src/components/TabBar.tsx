@@ -1,33 +1,11 @@
 import { motion } from "framer-motion";
 import { NavLink, useLocation } from "react-router-dom";
-import {
-  BookOpenIcon,
-  MapIcon,
-  PlusIcon,
-  UserCircleIcon,
-} from "@heroicons/react/24/outline";
-import {
-  MapIcon as MapSolid,
-  BookOpenIcon as BookSolid,
-  UserCircleIcon as UserSolid,
-} from "@heroicons/react/24/solid";
+import { Icon } from "./Icon";
 
 const tabs = [
-  { to: "/", label: "Map", Icon: MapIcon, ActiveIcon: MapSolid, end: true },
-  {
-    to: "/log",
-    label: "Log",
-    Icon: BookOpenIcon,
-    ActiveIcon: BookSolid,
-    end: false,
-  },
-  {
-    to: "/me",
-    label: "Me",
-    Icon: UserCircleIcon,
-    ActiveIcon: UserSolid,
-    end: false,
-  },
+  { to: "/", label: "Map", icon: "map", end: true },
+  { to: "/log", label: "Log", icon: "menu_book", end: false },
+  { to: "/me", label: "Me", icon: "account_circle", end: false },
 ] as const;
 
 export function TabBar() {
@@ -54,7 +32,7 @@ export function TabBar() {
               transition={{ type: "spring", stiffness: 400, damping: 24 }}
               className="flex items-center justify-center"
             >
-              <PlusIcon className="size-7 stroke-ink [stroke-width:2.5]" />
+              <Icon name="add" size={32} weight={700} color="var(--color-ink)" />
             </motion.span>
             <span
               className="pointer-events-none absolute inset-0 -m-2 rounded-full"
@@ -83,11 +61,13 @@ function TabItem({ tab }: { tab: (typeof tabs)[number] }) {
       {({ isActive }) => (
         <>
           <span className="relative flex items-center justify-center">
-            {isActive ? (
-              <tab.ActiveIcon className="size-6" />
-            ) : (
-              <tab.Icon className="size-6 stroke-current" />
-            )}
+            <Icon
+              name={tab.icon}
+              size={26}
+              variant={isActive ? "fill" : "outline"}
+              weight={isActive ? 600 : 400}
+              color="currentColor"
+            />
             {isActive ? (
               <motion.span
                 layoutId="tab-active-glow"

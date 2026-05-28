@@ -7,15 +7,17 @@ import { UserChip } from "~/components/UserChip";
 import {
   useAllDishes,
   useAllVisits,
+  useCurrentCouple,
   usePhotoUrl,
   useRestaurants,
 } from "~/data/hooks";
 import { formatDate, formatRelativeDate } from "~/utils/format";
-import { USERS, type Dish, type UserId, type Visit } from "~/data/types";
+import { memberOf, type Dish, type UserId, type Visit } from "~/data/types";
 
-type Filter = "all" | "clark" | "angie" | "duels";
+type Filter = "all" | "a" | "b" | "duels";
 
 export function LogPage() {
+  const couple = useCurrentCouple();
   const visits = useAllVisits();
   const dishes = useAllDishes();
   const restaurants = useRestaurants();
@@ -35,10 +37,6 @@ export function LogPage() {
     return map;
   }, [dishes]);
 
-  /**
-   * "Duels" view: collapse visits that happen on the same day at the same
-   * restaurant by different users into a single side-by-side card.
-   */
   const dayDuels = useMemo(() => {
     const buckets = new Map<string, Visit[]>();
     for (const v of visits) {
@@ -55,17 +53,19 @@ export function LogPage() {
         visits: vs,
         date: Math.max(...vs.map((v) => v.date)),
         bothPresent:
-          vs.some((v) => v.userId === "clark") &&
-          vs.some((v) => v.userId === "angie"),
+          vs.some((v) => v.userId === "a") && vs.some((v) => v.userId === "b"),
       }))
       .sort((a, b) => b.date - a.date);
   }, [visits]);
 
   const filteredVisits = useMemo(() => {
-    if (filter === "clark") return visits.filter((v) => v.userId === "clark");
-    if (filter === "angie") return visits.filter((v) => v.userId === "angie");
+    if (filter === "a") return visits.filter((v) => v.userId === "a");
+    if (filter === "b") return visits.filter((v) => v.userId === "b");
     return visits;
   }, [visits, filter]);
+
+  const memberA = memberOf(couple, "a");
+  const memberB = memberOf(couple, "b");
 
   return (
     <div className="pb-12">
@@ -82,7 +82,7 @@ export function LogPage() {
         </p>
 
         <div className="mt-4 inline-flex rounded-full bg-surface p-1 ring-1 ring-inset ring-line">
-          {(["all", "clark", "angie", "duels"] as Filter[]).map((k) => (
+          {(["all", "a", "b", "duels"] as Filter[]).map((k) => (
             <button
               key={k}
               type="button"
@@ -95,10 +95,10 @@ export function LogPage() {
             >
               {k === "all"
                 ? "All"
-                : k === "clark"
-                  ? "Clark"
-                  : k === "angie"
-                    ? "Angie"
+                : k === "a"
+                  ? memberA.name
+                  : k === "b"
+                    ? memberB.name
                     : "Duels"}
             </button>
           ))}
@@ -161,7 +161,8 @@ function LogVisitCard({
   restaurantName: string;
   dishes: Dish[];
 }) {
-  const u = USERS[visit.userId as UserId];
+  const couple = useCurrentCouple();
+  const u = memberOf(couple, visit.userId as UserId);
   return (
     <motion.div
       layout
@@ -210,7 +211,9 @@ function LogVisitCard({
 }
 
 function DishThumb({ dish }: { dish: Dish }) {
+  const couple = useCurrentCouple();
   const url = usePhotoUrl(dish.photoId);
+  const member = memberOf(couple, dish.userId);
   return (
     <div className="w-32 shrink-0 overflow-hidden rounded-2xl bg-surface ring-1 ring-inset ring-line">
       <div className="relative aspect-square overflow-hidden bg-surface-2">
@@ -238,7 +241,7 @@ function DishThumb({ dish }: { dish: Dish }) {
       <div className="px-2 py-1.5">
         <p className="line-clamp-1 text-xs font-bold text-ink">{dish.name}</p>
         <div className="mt-0.5 flex items-center justify-between">
-          <Stars value={dish.rating} size="xs" color={USERS[dish.userId].accent} />
+          <Stars value={dish.rating} size="xs" color={member.accent} />
           <span className="text-[10px] font-bold tabular-nums text-ink-muted">
             {dish.rating.toFixed(1)}
           </span>
@@ -259,8 +262,8 @@ function DuelDayCard({
   dishesByVisit: Record<string, Dish[]>;
   bothPresent: boolean;
 }) {
-  const clarkVisit = visits.find((v) => v.userId === "clark");
-  const angieVisit = visits.find((v) => v.userId === "angie");
+  const aVisit = visits.find((v) => v.userId === "a");
+  const bVisit = visits.find((v) => v.userId === "b");
   const date = Math.max(...visits.map((v) => v.date));
 
   return (
@@ -270,10 +273,7 @@ function DuelDayCard({
       animate={{ opacity: 1, y: 0 }}
       className="overflow-hidden rounded-3xl bg-surface ring-1 ring-inset ring-line"
     >
-      <Link
-        to={`/r/${visits[0]?.restaurantId ?? ""}`}
-        className="block"
-      >
+      <Link to={`/r/${visits[0]?.restaurantId ?? ""}`} className="block">
         <div className="flex items-start justify-between gap-3 p-4 pb-3">
           <div className="min-w-0 flex-1">
             <p className="text-[11px] font-bold tracking-[0.18em] text-ink-dim uppercase">
@@ -290,9 +290,17 @@ function DuelDayCard({
           ) : null}
         </div>
         <div className="grid grid-cols-2 gap-0 border-t border-line">
-          <DuelHalf user="clark" visit={clarkVisit} dishes={clarkVisit ? dishesByVisit[clarkVisit.id] ?? [] : []} />
+          <DuelHalf
+            user="a"
+            visit={aVisit}
+            dishes={aVisit ? (dishesByVisit[aVisit.id] ?? []) : []}
+          />
           <div className="border-l border-line">
-            <DuelHalf user="angie" visit={angieVisit} dishes={angieVisit ? dishesByVisit[angieVisit.id] ?? [] : []} />
+            <DuelHalf
+              user="b"
+              visit={bVisit}
+              dishes={bVisit ? (dishesByVisit[bVisit.id] ?? []) : []}
+            />
           </div>
         </div>
       </Link>
@@ -309,7 +317,8 @@ function DuelHalf({
   visit: Visit | undefined;
   dishes: Dish[];
 }) {
-  const u = USERS[user];
+  const couple = useCurrentCouple();
+  const u = memberOf(couple, user);
   return (
     <div
       className="relative flex flex-col gap-2 p-4"
@@ -344,7 +353,9 @@ function DuelHalf({
           ) : null}
         </>
       ) : (
-        <p className="text-xs font-medium text-ink-faint italic">No visit on this day.</p>
+        <p className="text-xs font-medium text-ink-faint italic">
+          No visit on this day.
+        </p>
       )}
     </div>
   );

@@ -1,12 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  BoltIcon,
-  HandRaisedIcon,
-  LockClosedIcon,
-  SparklesIcon,
-} from "@heroicons/react/24/solid";
 import { USERS, type UserId, type VerdictMeta } from "~/data/types";
 import { UserStars } from "./Stars";
+import { Icon } from "./Icon";
 
 export function VerdictBadge({
   verdict,
@@ -17,9 +12,9 @@ export function VerdictBadge({
 }) {
   const cfg = VERDICT[verdict.status];
   const dims = {
-    sm: { px: "px-2", py: "py-0.5", text: "text-[10px]", icon: "size-3" },
-    md: { px: "px-2.5", py: "py-1", text: "text-[11px]", icon: "size-3" },
-    lg: { px: "px-3", py: "py-1.5", text: "text-xs", icon: "size-3.5" },
+    sm: { px: "px-2", py: "py-0.5", text: "text-[10px]", icon: 12 },
+    md: { px: "px-2.5", py: "py-1", text: "text-[11px]", icon: 14 },
+    lg: { px: "px-3", py: "py-1.5", text: "text-xs", icon: 16 },
   }[size];
   return (
     <span
@@ -30,7 +25,7 @@ export function VerdictBadge({
         boxShadow: cfg.shadow,
       }}
     >
-      <cfg.Icon className={`${dims.icon} shrink-0`} />
+      <Icon name={cfg.icon} size={dims.icon} variant="fill" weight={700} color={cfg.fg} />
       {cfg.label}
     </span>
   );
@@ -39,35 +34,35 @@ export function VerdictBadge({
 const VERDICT = {
   locked: {
     label: "Locked",
-    Icon: LockClosedIcon,
+    icon: "lock",
     bg: "oklch(0 0 0 / 0.06)",
     fg: "oklch(0.3 0 0)",
     shadow: "inset 0 0 0 1px oklch(0 0 0 / 0.08)",
   },
   solo: {
     label: "1 Fork",
-    Icon: HandRaisedIcon,
+    icon: "back_hand",
     bg: "oklch(0.94 0.18 116)",
     fg: "oklch(0.28 0.08 130)",
     shadow: "inset 0 0 0 1px oklch(0.5 0.15 122 / 0.25)",
   },
   unanimous: {
     label: "Unanimous",
-    Icon: SparklesIcon,
+    icon: "auto_awesome",
     bg: "oklch(0.91 0.24 117)",
     fg: "oklch(0.18 0.06 130)",
     shadow: "inset 0 0 0 1px oklch(0.5 0.15 122 / 0.35)",
   },
   split: {
     label: "Split",
-    Icon: BoltIcon,
+    icon: "bolt",
     bg: "oklch(0.93 0.1 50)",
     fg: "oklch(0.32 0.12 40)",
     shadow: "inset 0 0 0 1px oklch(0.5 0.12 40 / 0.2)",
   },
   divided: {
     label: "Divided",
-    Icon: BoltIcon,
+    icon: "bolt",
     bg: "oklch(0.93 0.14 25)",
     fg: "oklch(0.32 0.18 25)",
     shadow: "inset 0 0 0 1px oklch(0.55 0.18 25 / 0.3)",
@@ -97,7 +92,7 @@ export function DuelScore({
       className={`grid grid-cols-[1fr_auto_1fr] items-center ${dims.gap}`}
     >
       <DuelSide
-        user="clark"
+        user="a"
         value={verdict.clark}
         align="right"
         numClass={dims.num}
@@ -105,7 +100,7 @@ export function DuelScore({
       />
       <DuelCenter verdict={verdict} size={size} />
       <DuelSide
-        user="angie"
+        user="b"
         value={verdict.angie}
         align="left"
         numClass={dims.num}
@@ -193,7 +188,7 @@ function DuelCenter({
             transition={{ type: "spring", stiffness: 400, damping: 26 }}
             className="flex size-12 items-center justify-center rounded-full bg-paper ring-1 ring-line"
           >
-            <LockClosedIcon className="size-5 text-ink-faint" />
+            <Icon name="lock" size={20} variant="fill" color="var(--color-ink-faint)" />
           </motion.div>
         ) : verdict.status === "solo" ? (
           <motion.div
@@ -235,9 +230,21 @@ function DuelCenter({
                 </span>
               </div>
               {verdict.status === "divided" ? (
-                <BoltIcon className="absolute -top-1 -right-1 size-4 text-angie-500 drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)]" />
+                <Icon
+                  name="bolt"
+                  size={18}
+                  variant="fill"
+                  className="absolute -top-1 -right-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)]"
+                  color="var(--color-angie-500)"
+                />
               ) : verdict.status === "unanimous" ? (
-                <SparklesIcon className="absolute -top-1 -right-1 size-4 text-tennis-700 drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)]" />
+                <Icon
+                  name="auto_awesome"
+                  size={18}
+                  variant="fill"
+                  className="absolute -top-1 -right-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)]"
+                  color="var(--color-tennis-700)"
+                />
               ) : null}
             </div>
           </motion.div>
@@ -259,9 +266,9 @@ export function DuelInline({
 }) {
   return (
     <div className={`flex items-center gap-1.5 ${className}`}>
-      <ScorePill user="clark" value={verdict.clark} />
+      <ScorePill user="a" value={verdict.clark} />
       <span className="text-xs font-bold text-ink-faint">vs</span>
-      <ScorePill user="angie" value={verdict.angie} />
+      <ScorePill user="b" value={verdict.angie} />
     </div>
   );
 }
@@ -323,8 +330,8 @@ export function GapBar({ verdict }: { verdict: VerdictMeta }) {
                 : "var(--color-tennis-500)",
         }}
       />
-      <DuelDot pos={c} accent={USERS.clark.accent} above={cIsLower} />
-      <DuelDot pos={a} accent={USERS.angie.accent} above={!cIsLower} />
+      <DuelDot pos={c} accent={USERS.a.accent} above={cIsLower} />
+      <DuelDot pos={a} accent={USERS.b.accent} above={!cIsLower} />
     </div>
   );
 }

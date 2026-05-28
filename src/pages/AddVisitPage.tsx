@@ -1,19 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
-import {
-  CheckIcon,
-  MagnifyingGlassIcon,
-  PlusIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
 import { Header } from "~/components/Header";
+import { Icon } from "~/components/Icon";
 import { StarInput } from "~/components/Stars";
 import { CompactPhotoButton } from "~/components/PhotoCapture";
 import { UserChip } from "~/components/UserChip";
-import { useCurrentUser, useRestaurants } from "~/data/hooks";
+import {
+  useCurrentCouple,
+  useCurrentUser,
+  useRestaurants,
+} from "~/data/hooks";
 import { saveDish, savePhoto, saveVisit } from "~/data/db";
-import { USERS, type Restaurant, type UserId } from "~/data/types";
+import { memberOf, type Restaurant, type UserId } from "~/data/types";
 import { PlaceholderArt } from "~/components/RestaurantCard";
 
 interface PendingDish {
@@ -28,6 +27,7 @@ export function AddVisitPage() {
   const { id: restaurantIdParam } = useParams<{ id: string }>();
   const restaurants = useRestaurants();
   const navigate = useNavigate();
+  const couple = useCurrentCouple();
   const [user] = useCurrentUser();
 
   const [restaurantId, setRestaurantId] = useState<string | null>(
@@ -75,12 +75,13 @@ export function AddVisitPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!restaurantId || !canSave) return;
+    if (!restaurantId || !canSave || !couple) return;
     setSaving(true);
     const now = Date.now();
     const visitId = crypto.randomUUID();
     await saveVisit({
       id: visitId,
+      coupleId: couple.id,
       restaurantId,
       userId: user,
       date,
@@ -92,9 +93,10 @@ export function AddVisitPage() {
     for (const d of dishes) {
       if (!d.name.trim()) continue;
       let photoId: string | undefined;
-      if (d.photoBlob) photoId = await savePhoto(d.photoBlob);
+      if (d.photoBlob) photoId = await savePhoto(d.photoBlob, couple.id);
       await saveDish({
         id: crypto.randomUUID(),
+        coupleId: couple.id,
         visitId,
         restaurantId,
         userId: user,
@@ -136,7 +138,7 @@ export function AddVisitPage() {
             disabled={!canSave || saving}
             className="pressable relative flex items-center gap-1.5 rounded-full bg-tennis-300 px-3 py-1.5 text-sm font-bold text-ink ring-1 ring-inset ring-tennis-500/30 disabled:opacity-40"
           >
-            <CheckIcon className="size-4 stroke-current [stroke-width:2.5]" />
+            <Icon name="check" size={18} weight={700} color="currentColor" />
             Save
             <span className="pointer-events-none absolute inset-0 -m-2" aria-hidden="true" />
           </button>
@@ -159,7 +161,7 @@ export function AddVisitPage() {
               value={rating}
               onChange={setRating}
               size="lg"
-              color={USERS[user].accent}
+              color={memberOf(couple, user).accent}
             />
             <span className="display-tight text-3xl tabular-nums text-ink">
               {rating > 0 ? rating.toFixed(1) : "—"}
@@ -215,7 +217,7 @@ export function AddVisitPage() {
               onClick={addDish}
               className="pressable relative flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-xs font-bold text-ink ring-1 ring-inset ring-line"
             >
-              <PlusIcon className="size-4 stroke-current [stroke-width:2]" />
+              <Icon name="add" size={18} weight={700} color="currentColor" />
               Add dish
               <span className="pointer-events-none absolute inset-0 -m-2" aria-hidden="true" />
             </button>
@@ -229,7 +231,7 @@ export function AddVisitPage() {
                 className="pressable group flex items-center gap-3 rounded-2xl bg-surface p-4 ring-1 ring-dashed ring-line"
               >
                 <div className="flex size-12 items-center justify-center rounded-2xl bg-tennis-200 ring-1 ring-inset ring-tennis-500/30">
-                  <PlusIcon className="size-6 stroke-ink [stroke-width:2.2]" />
+                  <Icon name="add" size={26} weight={700} color="var(--color-ink)" />
                 </div>
                 <div className="flex-1 text-left">
                   <p className="text-sm font-bold text-ink">Add your first dish</p>
@@ -256,7 +258,7 @@ export function AddVisitPage() {
           disabled={!canSave || saving}
           className="pressable mt-8 flex w-full items-center justify-center gap-2 rounded-2xl bg-tennis-300 py-3.5 text-base font-bold text-ink ring-1 ring-inset ring-tennis-500/30 shadow-[0_22px_50px_-12px_oklch(0.7_0.2_120_/_0.4)] disabled:opacity-40"
         >
-          <CheckIcon className="size-5 stroke-ink [stroke-width:2.5]" />
+          <Icon name="check" size={22} weight={700} color="var(--color-ink)" />
           {saving ? "Saving…" : "Save visit"}
         </button>
       </form>
@@ -287,10 +289,11 @@ function Section({
 }
 
 function UserBadge({ user }: { user: UserId }) {
+  const couple = useCurrentCouple();
   return (
     <div className="inline-flex items-center gap-2 rounded-2xl bg-surface px-3 py-2 ring-1 ring-inset ring-line">
       <UserChip id={user} size="md" />
-      <span className="text-sm font-bold text-ink">{USERS[user].name}</span>
+      <span className="text-sm font-bold text-ink">{memberOf(couple, user).name}</span>
       <span className="text-xs text-ink-faint">switch in header</span>
     </div>
   );
@@ -335,7 +338,7 @@ function RestaurantSelector({
         ) : (
           <>
             <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-tennis-200 ring-1 ring-inset ring-tennis-500/30">
-              <MagnifyingGlassIcon className="size-5 stroke-ink" />
+              <Icon name="search" size={22} color="var(--color-ink)" />
             </div>
             <div className="flex-1">
               <p className="text-sm font-bold text-ink">Choose a restaurant</p>
@@ -361,6 +364,7 @@ function PendingDishCard({
   onChange: (patch: Partial<PendingDish>) => void;
   onRemove: () => void;
 }) {
+  const couple = useCurrentCouple();
   return (
     <motion.div
       layout
@@ -386,7 +390,7 @@ function PendingDishCard({
               aria-label="Remove dish"
               className="pressable relative flex size-7 items-center justify-center rounded-full text-ink-faint hover:text-ink"
             >
-              <TrashIcon className="size-4 stroke-current" />
+              <Icon name="delete" size={18} color="currentColor" />
               <span className="pointer-events-none absolute inset-0 -m-2" aria-hidden="true" />
             </button>
           </div>
@@ -404,7 +408,7 @@ function PendingDishCard({
               value={dish.rating}
               onChange={(v) => onChange({ rating: v })}
               size="md"
-              color={USERS[user].accent}
+              color={memberOf(couple, user).accent}
             />
             <span className="text-xs font-bold tabular-nums text-ink-muted">
               {dish.rating > 0 ? dish.rating.toFixed(1) : "—"}
@@ -462,7 +466,7 @@ function RestaurantPicker({
       />
       <div className="px-4">
         <div className="flex items-center gap-2 rounded-2xl bg-surface px-3 py-2.5 ring-1 ring-inset ring-line">
-          <MagnifyingGlassIcon className="size-5 shrink-0 stroke-ink-dim" />
+          <Icon name="search" size={22} color="var(--color-ink-dim)" />
           <input
             type="search"
             name="q"

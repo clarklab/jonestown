@@ -1,18 +1,21 @@
 /**
- * Two-person sync layer.
+ * Per-couple sync layer.
  *
- * - On startup, pull /api/state and merge into IndexedDB by timestamp.
- * - On every local mutation, push the changed record to /api/state.
+ * - On startup, pull /api/state?slug=… and merge into IndexedDB by timestamp.
+ * - On every local mutation, push the changed record (with current slug)
+ *   to /api/state.
  * - Poll /api/state every POLL_MS to pick up partner mutations.
- * - Photos POST to /api/photo (multipart) and are addressed by id thereafter.
+ * - Photos POST to /api/photo (multipart, includes slug) and are addressed
+ *   by id thereafter.
  *
  * Sync is best-effort. If the API is unreachable (dev without netlify dev,
- * offline, etc.) the app keeps working from IndexedDB alone — nothing
- * breaks, we just retry later.
+ * offline, etc.) the app keeps working from IndexedDB alone.
  */
 
 import {
   emitChange,
+  getCurrentCoupleId,
+  getCouple,
   getDb,
   listDishes,
   listRestaurants,
@@ -28,6 +31,7 @@ const PUSH_DEBOUNCE_MS = 800;
 type RecordType = "restaurants" | "visits" | "dishes";
 
 interface ServerState {
+  slug: string;
   restaurants: Restaurant[];
   visits: Visit[];
   dishes: Dish[];
@@ -39,6 +43,7 @@ let pushTimer: ReturnType<typeof setTimeout> | null = null;
 let pollTimer: ReturnType<typeof setTimeout> | null = null;
 let lastServerTime = 0;
 let syncEnabled = true;
+let currentSlug: string | null = null;
 
 const listeners = new Set<(state: SyncStatus) => void>();
 const status: SyncStatus = {
@@ -71,6 +76,17 @@ function notify() {
   for (const fn of listeners) fn({ ...status });
 }
 
+async function refreshCurrentSlug(): Promise<string | null> {
+  const id = await getCurrentCoupleId();
+  if (!id) {
+    currentSlug = null;
+    return null;
+  }
+  const c = await getCouple(id);
+  currentSlug = c?.slug ?? null;
+  return currentSlug;
+}
+
 export function startSync(): () => void {
   if (typeof window === "undefined") return () => {};
 
@@ -92,12 +108,20 @@ export function startSync(): () => void {
   window.addEventListener("offline", offlineHandler);
 
   const unsubscribeChanges = onChange((table) => {
-    if (table === "restaurants" || table === "visits" || table === "dishes") {
+    if (table === "couples" || table === "meta") {
+      void refreshCurrentSlug().then(() => void pull());
+      return;
+    }
+    if (
+      table === "restaurants" ||
+      table === "visits" ||
+      table === "dishes"
+    ) {
       void enqueueAllOfTable(table as RecordType);
     }
   });
 
-  void pull();
+  void refreshCurrentSlug().then(() => void pull());
   pollTimer = setInterval(() => {
     if (status.online) void pull();
   }, POLL_MS);
@@ -112,12 +136,12 @@ export function startSync(): () => void {
 }
 
 async function enqueueAllOfTable(table: RecordType) {
-  // We push the entire table on change. For the scale we're at (≪1MB), this
-  // is fine and avoids tricky per-record diffing.
+  const id = await getCurrentCoupleId();
+  if (!id) return;
   let records: Array<{ id: string }> = [];
-  if (table === "restaurants") records = await listRestaurants();
-  else if (table === "visits") records = await listVisits();
-  else records = await listDishes();
+  if (table === "restaurants") records = await listRestaurants(id);
+  else if (table === "visits") records = await listVisits({ coupleId: id });
+  else records = await listDishes({ coupleId: id });
   for (const rec of records) {
     pushQueue.set(`${table}:${rec.id}`, { table, record: rec });
   }
@@ -135,15 +159,16 @@ function schedulePush() {
 async function flushPush() {
   if (!status.online) return;
   if (pushQueue.size === 0) return;
+  if (!currentSlug) await refreshCurrentSlug();
+  if (!currentSlug) return;
   const batch = Array.from(pushQueue.values());
   pushQueue = new Map();
   status.inFlight += batch.length;
   notify();
   try {
     for (const item of batch) {
-      const ok = await postRecord(item.table, item.record);
+      const ok = await postRecord(currentSlug, item.table, item.record);
       if (!ok) {
-        // requeue
         const id = (item.record as { id: string }).id;
         pushQueue.set(`${item.table}:${id}`, item);
       }
@@ -156,14 +181,16 @@ async function flushPush() {
     status.inFlight = Math.max(0, status.inFlight - batch.length);
     notify();
   }
-  if (pushQueue.size > 0) {
-    schedulePush();
-  }
+  if (pushQueue.size > 0) schedulePush();
 }
 
-async function postRecord(table: RecordType, record: unknown): Promise<boolean> {
+async function postRecord(
+  slug: string,
+  table: RecordType,
+  record: unknown,
+): Promise<boolean> {
   try {
-    const res = await fetch("/api/state", {
+    const res = await fetch(`/api/state?slug=${encodeURIComponent(slug)}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ table, record }),
@@ -176,8 +203,13 @@ async function postRecord(table: RecordType, record: unknown): Promise<boolean> 
 
 async function pull(): Promise<void> {
   if (!status.online) return;
+  if (!currentSlug) await refreshCurrentSlug();
+  if (!currentSlug) return;
   try {
-    const res = await fetch("/api/state", { method: "GET" });
+    const res = await fetch(
+      `/api/state?slug=${encodeURIComponent(currentSlug)}`,
+      { method: "GET" },
+    );
     if (!res.ok) {
       status.reachable = false;
       notify();
@@ -201,13 +233,10 @@ async function pull(): Promise<void> {
 async function mergeIntoLocal(remote: ServerState) {
   const db = await getDb();
 
-  // restaurants — by updatedAt
-  const localR = await db.getAll("restaurants");
-  const localMapR = new Map(localR.map((r) => [r.id, r]));
   const txR = db.transaction("restaurants", "readwrite");
   let touchedR = false;
   for (const rr of remote.restaurants ?? []) {
-    const local = localMapR.get(rr.id);
+    const local = await txR.objectStore("restaurants").get(rr.id);
     if (!local || (rr.updatedAt ?? 0) > (local.updatedAt ?? 0)) {
       await txR.objectStore("restaurants").put(rr);
       touchedR = true;
@@ -215,13 +244,10 @@ async function mergeIntoLocal(remote: ServerState) {
   }
   await txR.done;
 
-  // visits — append-only by id; last write wins on createdAt
-  const localV = await db.getAll("visits");
-  const localMapV = new Map(localV.map((v) => [v.id, v]));
   const txV = db.transaction("visits", "readwrite");
   let touchedV = false;
   for (const rv of remote.visits ?? []) {
-    const local = localMapV.get(rv.id);
+    const local = await txV.objectStore("visits").get(rv.id);
     if (!local || rv.createdAt > local.createdAt) {
       await txV.objectStore("visits").put(rv);
       touchedV = true;
@@ -229,13 +255,10 @@ async function mergeIntoLocal(remote: ServerState) {
   }
   await txV.done;
 
-  // dishes — same
-  const localD = await db.getAll("dishes");
-  const localMapD = new Map(localD.map((d) => [d.id, d]));
   const txD = db.transaction("dishes", "readwrite");
   let touchedD = false;
   for (const rd of remote.dishes ?? []) {
-    const local = localMapD.get(rd.id);
+    const local = await txD.objectStore("dishes").get(rd.id);
     if (!local || rd.createdAt > local.createdAt) {
       await txD.objectStore("dishes").put(rd);
       touchedD = true;
@@ -255,12 +278,15 @@ const photoUploadInflight = new Set<string>();
 export async function uploadPhotoToServer(photo: Photo): Promise<boolean> {
   if (!status.online) return false;
   if (photoUploadInflight.has(photo.id)) return true;
+  if (!currentSlug) await refreshCurrentSlug();
+  if (!currentSlug) return false;
   photoUploadInflight.add(photo.id);
   status.inFlight += 1;
   notify();
   try {
     const form = new FormData();
     form.append("id", photo.id);
+    form.append("slug", currentSlug);
     form.append("file", photo.blob, `${photo.id}.webp`);
     const res = await fetch("/api/photo", { method: "POST", body: form });
     return res.ok;
@@ -273,13 +299,71 @@ export async function uploadPhotoToServer(photo: Photo): Promise<boolean> {
   }
 }
 
-export async function downloadPhotoFromServer(id: string): Promise<Blob | null> {
+export async function downloadPhotoFromServer(
+  id: string,
+): Promise<Blob | null> {
+  if (!currentSlug) await refreshCurrentSlug();
+  const qs = currentSlug ? `?slug=${encodeURIComponent(currentSlug)}` : "";
   try {
-    const res = await fetch(`/api/photo/${id}`);
+    const res = await fetch(`/api/photo/${id}${qs}`);
     if (!res.ok) return null;
     return await res.blob();
   } catch {
     return null;
+  }
+}
+
+/* ------------- Couple claim ------------- */
+
+/**
+ * Try to claim a slug on the server. Returns true if claim succeeded,
+ * false if the slug is taken. If the server is unreachable, treat as
+ * "claimed locally" (true) — the app is still usable from this device.
+ */
+export async function claimCoupleOnServer(payload: {
+  slug: string;
+  name: string;
+  town: string;
+  members: unknown;
+  badge: unknown;
+}): Promise<{ ok: boolean; reason?: "taken" | "offline" }> {
+  try {
+    const res = await fetch("/api/couple/claim", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (res.status === 409) return { ok: false, reason: "taken" };
+    if (!res.ok) return { ok: true, reason: "offline" };
+    return { ok: true };
+  } catch {
+    return { ok: true, reason: "offline" };
+  }
+}
+
+/**
+ * Look up a couple by slug on the server. Used by the join flow.
+ */
+export async function lookupCoupleOnServer(slug: string): Promise<{
+  found: boolean;
+  couple?: { slug: string; name: string; town: string; members: unknown; badge: unknown };
+}> {
+  try {
+    const res = await fetch(
+      `/api/couple/lookup?slug=${encodeURIComponent(slug)}`,
+    );
+    if (res.status === 404) return { found: false };
+    if (!res.ok) return { found: false };
+    const data = (await res.json()) as {
+      slug: string;
+      name: string;
+      town: string;
+      members: unknown;
+      badge: unknown;
+    };
+    return { found: true, couple: data };
+  } catch {
+    return { found: false };
   }
 }
 

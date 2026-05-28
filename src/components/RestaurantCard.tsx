@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { LockClosedIcon } from "@heroicons/react/24/solid";
 import { usePhotoUrl } from "~/data/hooks";
 import type { RestaurantAggregate } from "~/data/types";
 import { DuelInline, VerdictBadge } from "./Duel";
+import { Icon } from "./Icon";
 import { formatRelativeDate } from "~/utils/format";
 
 export function RestaurantCard({ agg }: { agg: RestaurantAggregate }) {
@@ -36,7 +36,7 @@ export function RestaurantCard({ agg }: { agg: RestaurantAggregate }) {
           )}
           {isLocked ? (
             <div className="absolute inset-0 flex items-center justify-center bg-surface/85 backdrop-blur-md">
-              <LockClosedIcon className="size-6 text-ink-faint" />
+              <Icon name="lock" size={26} variant="fill" color="var(--color-ink-faint)" />
             </div>
           ) : null}
         </div>

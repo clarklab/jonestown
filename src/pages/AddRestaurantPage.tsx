@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckIcon } from "@heroicons/react/24/outline";
 import { Header } from "~/components/Header";
+import { Icon } from "~/components/Icon";
 import { saveRestaurant } from "~/data/db";
 
 export function AddRestaurantPage() {
@@ -43,7 +43,7 @@ export function AddRestaurantPage() {
             disabled={!canSave || saving}
             className="pressable relative flex items-center gap-1.5 rounded-full bg-tennis-300 px-3 py-1.5 text-sm font-bold text-ink ring-1 ring-inset ring-tennis-500/30 disabled:opacity-40"
           >
-            <CheckIcon className="size-4 stroke-current [stroke-width:2.5]" />
+            <Icon name="check" size={18} weight={700} color="currentColor" />
             Save
             <span className="pointer-events-none absolute inset-0 -m-2" aria-hidden="true" />
           </button>
@@ -111,7 +111,7 @@ export function AddRestaurantPage() {
           disabled={!canSave || saving}
           className="pressable mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-tennis-300 py-3.5 text-base font-bold text-ink ring-1 ring-inset ring-tennis-500/30 shadow-[0_22px_50px_-12px_oklch(0.7_0.2_120_/_0.4)] disabled:opacity-40"
         >
-          <CheckIcon className="size-5 stroke-ink [stroke-width:2.5]" />
+          <Icon name="check" size={22} weight={700} color="var(--color-ink)" />
           {saving ? "Saving…" : "Save restaurant"}
         </button>
       </form>

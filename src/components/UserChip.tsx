@@ -1,4 +1,5 @@
-import { USERS, type UserId } from "~/data/types";
+import { useCurrentCouple } from "~/data/hooks";
+import { memberOf, type UserId } from "~/data/types";
 
 const SIZES = {
   xs: { box: "size-5", text: "text-[10px]" },
@@ -19,7 +20,8 @@ export function UserChip({
   showName?: boolean;
   ring?: boolean;
 }) {
-  const u = USERS[id];
+  const couple = useCurrentCouple();
+  const u = memberOf(couple, id);
   const dim = SIZES[size];
   return (
     <div className="flex items-center gap-1.5">
@@ -49,26 +51,62 @@ export function DuelAvatars({
   size?: "sm" | "md" | "lg";
   highlight?: UserId;
 }) {
+  const couple = useCurrentCouple();
+  const a = memberOf(couple, "a");
+  const b = memberOf(couple, "b");
   const dim = size === "sm" ? "size-5" : size === "lg" ? "size-9" : "size-7";
-  const text = size === "sm" ? "text-[10px]" : size === "lg" ? "text-sm" : "text-xs";
+  const text =
+    size === "sm" ? "text-[10px]" : size === "lg" ? "text-sm" : "text-xs";
   return (
     <div className="flex items-center" aria-hidden="true">
       <div
         className={`${dim} flex items-center justify-center rounded-full font-bold text-white ring-2 ring-paper ${
-          highlight === "clark" ? "scale-110" : ""
+          highlight === "a" ? "scale-110" : ""
         }`}
-        style={{ background: USERS.clark.accent }}
+        style={{ background: a.accent }}
       >
-        <span className={text}>C</span>
+        <span className={text}>{a.initial}</span>
       </div>
       <div
         className={`${dim} -ml-2 flex items-center justify-center rounded-full font-bold text-white ring-2 ring-paper ${
-          highlight === "angie" ? "scale-110" : ""
+          highlight === "b" ? "scale-110" : ""
         }`}
-        style={{ background: USERS.angie.accent }}
+        style={{ background: b.accent }}
       >
-        <span className={text}>A</span>
+        <span className={text}>{b.initial}</span>
       </div>
+    </div>
+  );
+}
+
+/** Couple-wide badge: the emoji + accent color set during onboarding. */
+export function CoupleBadge({
+  size = "md",
+}: {
+  size?: "sm" | "md" | "lg" | "xl";
+}) {
+  const couple = useCurrentCouple();
+  const sizes = {
+    sm: { box: "size-7", text: "text-base" },
+    md: { box: "size-9", text: "text-lg" },
+    lg: { box: "size-12", text: "text-2xl" },
+    xl: { box: "size-16", text: "text-3xl" },
+  }[size];
+  if (!couple) {
+    return (
+      <div
+        className={`${sizes.box} rounded-[24%] bg-tennis-300`}
+        aria-hidden="true"
+      />
+    );
+  }
+  return (
+    <div
+      className={`${sizes.box} relative flex items-center justify-center rounded-[24%] ring-1 ring-inset ring-black/5`}
+      style={{ background: couple.badge.color }}
+      aria-label={couple.name}
+    >
+      <span className={sizes.text}>{couple.badge.emoji}</span>
     </div>
   );
 }

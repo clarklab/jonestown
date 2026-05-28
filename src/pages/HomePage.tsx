@@ -1,16 +1,12 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import {
-  MagnifyingGlassIcon,
-  MapIcon,
-  PlusIcon,
-  Squares2X2Icon,
-} from "@heroicons/react/24/outline";
 import { Header } from "~/components/Header";
+import { Icon } from "~/components/Icon";
+import { CoupleBadge } from "~/components/UserChip";
 import { RestaurantCard } from "~/components/RestaurantCard";
 import { TownMap } from "~/components/TownMap";
-import { useAggregates } from "~/data/hooks";
+import { useAggregates, useCurrentCouple } from "~/data/hooks";
 import type { RestaurantAggregate, VerdictStatus } from "~/data/types";
 
 type SortKey =
@@ -33,6 +29,7 @@ const SORT_LABELS: Record<SortKey, string> = {
 };
 
 export function HomePage() {
+  const couple = useCurrentCouple();
   const aggs = useAggregates();
   const [sort, setSort] = useState<SortKey>("all");
   const [query, setQuery] = useState("");
@@ -68,9 +65,12 @@ export function HomePage() {
               unlocked={aggs.bothRatedCount}
               total={aggs.totalCount}
             />
-            <span className="ml-auto rounded-full bg-paper/85 px-2.5 py-1 text-[10px] font-bold tracking-[0.16em] text-ink-muted uppercase backdrop-blur-md ring-1 ring-inset ring-line">
-              78645
-            </span>
+            <div className="ml-auto flex items-center gap-1.5 rounded-full bg-paper/85 py-1 pr-2.5 pl-1 backdrop-blur-md ring-1 ring-inset ring-line">
+              <CoupleBadge size="sm" />
+              <span className="text-[10px] font-bold tracking-[0.16em] text-ink-muted uppercase">
+                {couple?.town?.split(",").pop()?.trim() || "Your town"}
+              </span>
+            </div>
           </div>
 
           {/* Legend */}
@@ -93,14 +93,14 @@ export function HomePage() {
         {/* Big tagline */}
         <div className="mt-5">
           <p className="text-[11px] font-bold tracking-[0.22em] text-ink-dim uppercase">
-            Jonestown, TX
+            {couple?.town ?? "Your town"}
           </p>
           <h1 className="display-tight mt-1 text-[40px] leading-[0.95] tracking-tight text-balance text-ink">
             Eat the whole map.
           </h1>
           <p className="mt-2 max-w-[40ch] text-pretty text-sm text-ink-muted">
-            Every restaurant in town is a fog tile. Both of you have to rate it
-            before it unlocks. Find them. Argue about them.
+            Every restaurant in town is a fog tile. Both of you have to rate
+            it before it unlocks. Find them. Argue about them.
           </p>
         </div>
 
@@ -114,7 +114,7 @@ export function HomePage() {
       {/* Search + filter */}
       <section className="px-4">
         <div className="flex items-center gap-2 rounded-2xl bg-surface px-3 py-2.5 ring-1 ring-inset ring-line">
-          <MagnifyingGlassIcon className="size-5 shrink-0 stroke-ink-dim" />
+          <Icon name="search" size={22} color="var(--color-ink-dim)" />
           <input
             type="search"
             name="q"
@@ -162,7 +162,7 @@ export function HomePage() {
           className="pressable group flex items-center gap-3 rounded-3xl bg-surface p-4 ring-1 ring-inset ring-line"
         >
           <div className="flex size-12 items-center justify-center rounded-2xl bg-tennis-200 ring-1 ring-inset ring-tennis-500/30">
-            <PlusIcon className="size-6 stroke-ink [stroke-width:2.2]" />
+            <Icon name="add" size={26} weight={700} color="var(--color-ink)" />
           </div>
           <div className="flex-1">
             <p className="text-base font-bold text-ink">Add a restaurant</p>
@@ -278,11 +278,7 @@ function ViewToggle({
             aria-label={`${v} view`}
             className={`pressable relative flex size-7 items-center justify-center rounded-full ${active ? "bg-paper shadow-sm" : ""}`}
           >
-            {v === "map" ? (
-              <MapIcon className="size-4 stroke-current" />
-            ) : (
-              <Squares2X2Icon className="size-4 stroke-current" />
-            )}
+            <Icon name={v === "map" ? "map" : "grid_view"} size={18} color="currentColor" />
           </button>
         );
       })}

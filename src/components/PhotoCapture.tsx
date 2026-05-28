@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import { CameraIcon, PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
+import { Icon } from "./Icon";
 
 export function PhotoCapture({
   blob,
@@ -45,7 +45,7 @@ export function PhotoCapture({
           className="pressable absolute top-2 right-2 flex size-9 items-center justify-center rounded-full bg-paper/90 backdrop-blur-md ring-1 ring-inset ring-line"
           aria-label="Remove photo"
         >
-          <XMarkIcon className="size-5 stroke-ink" />
+          <Icon name="close" size={20} weight={600} color="var(--color-ink)" />
         </motion.button>
       </div>
     );
@@ -58,7 +58,7 @@ export function PhotoCapture({
       className={`pressable group relative flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 rounded-3xl bg-surface outline-1 -outline-offset-1 outline-dashed outline-black/15 ${className}`}
     >
       <div className="flex size-12 items-center justify-center rounded-full bg-tennis-200 ring-1 ring-inset ring-tennis-500/30">
-        <CameraIcon className="size-6 stroke-ink" />
+        <Icon name="photo_camera" size={24} weight={500} color="var(--color-ink)" />
       </div>
       <span className="text-sm font-bold text-ink">Add a photo</span>
       <span className="text-xs text-ink-dim">tap to take or upload</span>
@@ -115,7 +115,7 @@ export function CompactPhotoButton({
           <div className="absolute inset-0 bg-paper/40 opacity-0 group-active:opacity-100" />
         </>
       ) : (
-        <PlusIcon className="size-6 stroke-ink-muted" />
+        <Icon name="add" size={24} weight={500} color="var(--color-ink-muted)" />
       )}
       <input
         ref={inputRef}

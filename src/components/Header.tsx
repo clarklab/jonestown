@@ -1,10 +1,10 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeftIcon } from "@heroicons/react/24/outline";
-import { useCurrentUser } from "~/data/hooks";
-import { USERS, type UserId } from "~/data/types";
-import { UserChip } from "./UserChip";
+import { Icon } from "./Icon";
+import { CoupleBadge, UserChip } from "./UserChip";
+import { useCurrentCouple, useCurrentUser } from "~/data/hooks";
+import { memberOf, type UserId } from "~/data/types";
 
 export function Header({
   title,
@@ -36,7 +36,7 @@ export function Header({
           aria-label="Back"
           className="pressable relative -ml-1 flex size-10 items-center justify-center rounded-full bg-surface ring-1 ring-inset ring-line"
         >
-          <ArrowLeftIcon className="size-5 stroke-ink" />
+          <Icon name="arrow_back" size={22} weight={600} color="var(--color-ink)" />
           <span
             className="pointer-events-none absolute inset-0 -m-2"
             aria-hidden="true"
@@ -56,24 +56,16 @@ export function Header({
 }
 
 function BrandMark() {
+  const couple = useCurrentCouple();
   return (
-    <div className="flex items-center gap-2">
-      <div
-        className="relative flex size-10 items-center justify-center rounded-[14px] ring-1 ring-inset ring-black/5"
-        style={{
-          background:
-            "linear-gradient(135deg, var(--color-tennis-200) 0%, var(--color-tennis-400) 80%)",
-        }}
-        aria-hidden="true"
-      >
-        <span className="display-tight text-[20px] leading-none text-ink">
-          J
+    <div className="flex min-w-0 items-center gap-2">
+      <CoupleBadge size="md" />
+      <div className="flex min-w-0 flex-col leading-none">
+        <span className="display-tight truncate text-[18px] text-ink">
+          {couple?.name ?? "Jonestown"}
         </span>
-      </div>
-      <div className="flex flex-col leading-none">
-        <span className="display-tight text-[18px] text-ink">Jonestown</span>
-        <span className="text-[10px] tracking-[0.18em] text-ink-dim uppercase">
-          Two-Fork Club
+        <span className="truncate text-[10px] font-bold tracking-[0.16em] text-ink-dim uppercase">
+          {couple?.town ?? "Two-fork supper club"}
         </span>
       </div>
     </div>
@@ -81,20 +73,20 @@ function BrandMark() {
 }
 
 export function UserPicker() {
+  const couple = useCurrentCouple();
   const [user, setUser] = useCurrentUser();
   const [open, setOpen] = useState(false);
+  const me = memberOf(couple, user);
   return (
     <div className="relative">
       <button
         type="button"
-        aria-label={`Logging as ${USERS[user].name}`}
+        aria-label={`Logging as ${me.name}`}
         onClick={() => setOpen((o) => !o)}
         className="pressable relative flex items-center gap-2 rounded-full bg-surface py-1 pr-3 pl-1 ring-1 ring-inset ring-line"
       >
         <UserChip id={user} size="sm" />
-        <span className="text-xs font-bold text-ink">
-          {USERS[user].name}
-        </span>
+        <span className="text-xs font-bold text-ink">{me.name}</span>
         <span
           className="pointer-events-none absolute inset-0 -m-2"
           aria-hidden="true"
@@ -121,30 +113,33 @@ export function UserPicker() {
               <div className="border-b border-line px-3 pt-2.5 pb-1.5 text-[10px] font-bold tracking-[0.18em] text-ink-dim uppercase">
                 Logging as
               </div>
-              {(Object.keys(USERS) as UserId[]).map((id) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => {
-                    setUser(id);
-                    setOpen(false);
-                  }}
-                  className={`flex w-full items-center gap-3 px-3 py-2.5 text-left ${
-                    user === id ? "bg-tennis-100" : ""
-                  }`}
-                >
-                  <UserChip id={id} size="md" />
-                  <span className="flex-1 text-sm font-bold text-ink">
-                    {USERS[id].name}
-                  </span>
-                  {user === id ? (
-                    <span
-                      className="size-2 rounded-full"
-                      style={{ background: USERS[id].accent }}
-                    />
-                  ) : null}
-                </button>
-              ))}
+              {(["a", "b"] as UserId[]).map((slot) => {
+                const m = memberOf(couple, slot);
+                return (
+                  <button
+                    key={slot}
+                    type="button"
+                    onClick={() => {
+                      setUser(slot);
+                      setOpen(false);
+                    }}
+                    className={`flex w-full items-center gap-3 px-3 py-2.5 text-left ${
+                      user === slot ? "bg-tennis-100" : ""
+                    }`}
+                  >
+                    <UserChip id={slot} size="md" />
+                    <span className="flex-1 text-sm font-bold text-ink">
+                      {m.name}
+                    </span>
+                    {user === slot ? (
+                      <span
+                        className="size-2 rounded-full"
+                        style={{ background: m.accent }}
+                      />
+                    ) : null}
+                  </button>
+                );
+              })}
             </motion.div>
           </>
         ) : null}

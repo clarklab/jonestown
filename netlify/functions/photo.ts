@@ -1,10 +1,10 @@
 import { getStore } from "@netlify/blobs";
 
 /**
- * Photo storage. Photos are uploaded by the client and addressed by id.
+ * Per-couple photo storage. Each couple has its own blob namespace.
  *
- * POST /api/photo                  → multipart upload { id?, file } → { id }
- * GET  /api/photo/:id              → serves the image bytes
+ *   POST /api/photo            multipart { slug, id?, file } → { id }
+ *   GET  /api/photo/:id?slug=… → serves the image bytes
  */
 
 function getPhotoStore() {
@@ -19,11 +19,14 @@ function uuid() {
       Math.random().toString(36).slice(2);
 }
 
+function key(slug: string, id: string) {
+  return `${slug}/${id}`;
+}
+
 export default async (req: Request): Promise<Response> => {
   try {
     const url = new URL(req.url);
     const segments = url.pathname.split("/").filter(Boolean);
-    // path is /api/photo OR /api/photo/<id>
     const id = segments.length >= 3 ? segments[segments.length - 1] : null;
 
     if (req.method === "POST") {
@@ -33,6 +36,7 @@ export default async (req: Request): Promise<Response> => {
       let bodyBuffer: ArrayBuffer;
       let type = "application/octet-stream";
       let providedId: string | null = null;
+      let slug: string | null = null;
 
       if (ct.startsWith("multipart/form-data")) {
         const form = await req.formData();
@@ -46,15 +50,24 @@ export default async (req: Request): Promise<Response> => {
         type = file.type || type;
         const i = form.get("id");
         providedId = typeof i === "string" && i ? i : null;
+        const s = form.get("slug");
+        slug = typeof s === "string" && s ? s : null;
       } else {
         bodyBuffer = await req.arrayBuffer();
         type = ct || type;
         providedId = req.headers.get("x-photo-id");
+        slug = url.searchParams.get("slug");
+      }
+
+      if (!slug || !/^[a-z0-9-]{2,48}$/.test(slug)) {
+        return new Response(JSON.stringify({ error: "missing slug" }), {
+          status: 400,
+        });
       }
 
       const photoId = providedId || uuid();
-      await store.set(photoId, bodyBuffer, {
-        metadata: { contentType: type },
+      await store.set(key(slug, photoId), bodyBuffer, {
+        metadata: { contentType: type, slug },
       });
 
       return new Response(JSON.stringify({ id: photoId }), {
@@ -69,8 +82,16 @@ export default async (req: Request): Promise<Response> => {
           status: 400,
         });
       }
+      const slug = url.searchParams.get("slug");
+      if (!slug) {
+        return new Response(JSON.stringify({ error: "missing slug" }), {
+          status: 400,
+        });
+      }
       const store = getPhotoStore();
-      const result = await store.getWithMetadata(id, { type: "arrayBuffer" });
+      const result = await store.getWithMetadata(key(slug, id), {
+        type: "arrayBuffer",
+      });
       if (!result) {
         return new Response("not found", { status: 404 });
       }

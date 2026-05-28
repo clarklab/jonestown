@@ -1,92 +1,112 @@
 import { getStore } from "@netlify/blobs";
 
 /**
- * Single-document state for the Jonestown two-person review club.
+ * Per-couple state document. Each couple's state lives at `state-{slug}.json`
+ * in the `jonestown-state` blob store. All requests must carry `?slug=…`.
  *
- * GET  /api/state               → full state (restaurants, visits, dishes, photoIndex)
- * POST /api/state               → upsert a single record { table, record }
- * DELETE /api/state?table=…&id=…→ remove a record
- *
- * Records use `updatedAt` (restaurants) or `createdAt` (visits/dishes) for
- * last-write-wins merge on the client. The server is dumb — it just owns the
- * canonical bag.
+ *   GET  /api/state?slug=…            → full state for that couple
+ *   POST /api/state?slug=… body{table,record}  → upsert a single record
+ *   DELETE /api/state?slug=…&table=…&id=…      → remove a record
  */
 
 interface ServerState {
-  restaurants: Array<Record<string, unknown> & { id: string; updatedAt?: number; hidden?: boolean }>;
+  slug: string;
+  restaurants: Array<
+    Record<string, unknown> & { id: string; updatedAt?: number }
+  >;
   visits: Array<Record<string, unknown> & { id: string; createdAt: number }>;
   dishes: Array<Record<string, unknown> & { id: string; createdAt: number }>;
   serverTime: number;
 }
 
-const EMPTY: ServerState = {
-  restaurants: [],
-  visits: [],
-  dishes: [],
-  serverTime: 0,
-};
+function emptyState(slug: string): ServerState {
+  return {
+    slug,
+    restaurants: [],
+    visits: [],
+    dishes: [],
+    serverTime: 0,
+  };
+}
 
 function getStateStore() {
   return getStore({ name: "jonestown-state", consistency: "strong" });
 }
 
-async function readState(): Promise<ServerState> {
-  const store = getStateStore();
-  const json = await store.get("state.json", { type: "json" });
-  if (!json) return EMPTY;
-  return json as ServerState;
+function key(slug: string) {
+  return `state-${slug}.json`;
 }
 
-async function writeState(state: ServerState): Promise<void> {
+async function readState(slug: string): Promise<ServerState> {
   const store = getStateStore();
-  await store.setJSON("state.json", { ...state, serverTime: Date.now() });
+  const json = await store.get(key(slug), { type: "json" });
+  if (!json) return emptyState(slug);
+  const state = json as ServerState;
+  state.slug = slug;
+  return state;
+}
+
+async function writeState(slug: string, state: ServerState): Promise<void> {
+  const store = getStateStore();
+  await store.setJSON(key(slug), {
+    ...state,
+    slug,
+    serverTime: Date.now(),
+  });
 }
 
 export default async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
+  const slug = url.searchParams.get("slug");
+  if (!slug || !/^[a-z0-9-]{2,48}$/.test(slug)) {
+    return jsonResponse({ error: "missing or invalid slug" }, 400);
+  }
 
   try {
     if (req.method === "GET") {
-      const state = await readState();
+      const state = await readState(slug);
       return jsonResponse(state);
     }
 
     if (req.method === "POST") {
       const body = (await req.json()) as {
-        table: keyof ServerState;
+        table: "restaurants" | "visits" | "dishes";
         record: { id: string };
       };
       if (!body.table || !body.record?.id) {
         return jsonResponse({ error: "missing table/record" }, 400);
       }
-      const state = await readState();
-      const tableKey = body.table;
-      if (tableKey === "serverTime") {
+      const state = await readState(slug);
+      if (
+        body.table !== "restaurants" &&
+        body.table !== "visits" &&
+        body.table !== "dishes"
+      ) {
         return jsonResponse({ error: "invalid table" }, 400);
       }
-      const list = (state[tableKey] ?? []) as Array<{ id: string }>;
+      const list = (state[body.table] ?? []) as Array<{ id: string }>;
       const idx = list.findIndex((r) => r.id === body.record.id);
-      if (idx >= 0) {
-        list[idx] = body.record;
-      } else {
-        list.push(body.record);
-      }
-      (state[tableKey] as unknown) = list;
-      await writeState(state);
+      if (idx >= 0) list[idx] = body.record;
+      else list.push(body.record);
+      (state[body.table] as unknown) = list;
+      await writeState(slug, state);
       return jsonResponse({ ok: true, serverTime: state.serverTime });
     }
 
     if (req.method === "DELETE") {
-      const table = url.searchParams.get("table") as keyof ServerState | null;
+      const table = url.searchParams.get("table") as
+        | "restaurants"
+        | "visits"
+        | "dishes"
+        | null;
       const id = url.searchParams.get("id");
-      if (!table || !id || table === "serverTime") {
+      if (!table || !id) {
         return jsonResponse({ error: "missing table/id" }, 400);
       }
-      const state = await readState();
+      const state = await readState(slug);
       const list = state[table] as Array<{ id: string }>;
-      const next = list.filter((r) => r.id !== id);
-      (state[table] as unknown) = next;
-      await writeState(state);
+      (state[table] as unknown) = list.filter((r) => r.id !== id);
+      await writeState(slug, state);
       return jsonResponse({ ok: true });
     }
 

@@ -1,12 +1,7 @@
 import { motion } from "framer-motion";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import {
-  ChevronRightIcon,
-  LockClosedIcon,
-  MapPinIcon,
-  PlusIcon,
-} from "@heroicons/react/24/outline";
 import { Header } from "~/components/Header";
+import { Icon } from "~/components/Icon";
 import { Stars, UserStars } from "~/components/Stars";
 import { UserChip } from "~/components/UserChip";
 import { DuelScore, GapBar, VerdictBadge } from "~/components/Duel";
@@ -45,8 +40,8 @@ export function RestaurantPage() {
   const missingUser: UserId | null =
     verdict.status === "solo"
       ? verdict.clark === undefined
-        ? "clark"
-        : "angie"
+        ? "a"
+        : "b"
       : null;
 
   return (
@@ -84,7 +79,7 @@ export function RestaurantPage() {
 
         {restaurant.address ? (
           <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-ink-dim">
-            <MapPinIcon className="size-3.5 shrink-0 stroke-current" />
+            <Icon name="location_on" size={14} color="currentColor" />
             {restaurant.address}
           </p>
         ) : null}
@@ -116,7 +111,7 @@ export function RestaurantPage() {
             onClick={() => navigate(`/r/${restaurant.id}/visit`)}
             className="pressable flex w-full items-center justify-center gap-2 rounded-2xl bg-tennis-300 py-3.5 text-base font-bold text-ink ring-1 ring-inset ring-tennis-500/30 shadow-[0_18px_40px_-12px_oklch(0.7_0.2_120_/_0.45)]"
           >
-            <PlusIcon className="size-5 stroke-ink [stroke-width:2.5]" />
+            <Icon name="add" size={22} weight={700} color="var(--color-ink)" />
             {missingUser === currentUser
               ? `Be the second fork`
               : agg.visitCountByUser[currentUser] > 0
@@ -142,18 +137,18 @@ export function RestaurantPage() {
         </div>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <TakeCard
-            user="clark"
+            user="a"
             rating={verdict.clark}
-            visitCount={agg.visitCountByUser.clark}
-            dishes={dishes.filter((d) => d.userId === "clark")}
-            visits={visits.filter((v) => v.userId === "clark")}
+            visitCount={agg.visitCountByUser.a}
+            dishes={dishes.filter((d) => d.userId === "a")}
+            visits={visits.filter((v) => v.userId === "a")}
           />
           <TakeCard
-            user="angie"
+            user="b"
             rating={verdict.angie}
-            visitCount={agg.visitCountByUser.angie}
-            dishes={dishes.filter((d) => d.userId === "angie")}
-            visits={visits.filter((v) => v.userId === "angie")}
+            visitCount={agg.visitCountByUser.b}
+            dishes={dishes.filter((d) => d.userId === "b")}
+            visits={visits.filter((v) => v.userId === "b")}
           />
         </div>
       </section>
@@ -238,7 +233,7 @@ function WaitingOn({ missing }: { missing: UserId }) {
 function LockedNotice() {
   return (
     <div className="mt-5 flex items-center justify-center gap-2 rounded-2xl bg-surface-2 px-3 py-2 ring-1 ring-inset ring-line">
-      <LockClosedIcon className="size-4 text-ink-faint" />
+      <Icon name="lock" size={16} variant="fill" color="var(--color-ink-faint)" />
       <span className="text-xs font-bold text-ink-muted">
         Both of you need to rate to unlock this on the map.
       </span>
@@ -397,7 +392,7 @@ function VisitRow({ visit }: { visit: Visit }) {
           </p>
         ) : null}
       </div>
-      <ChevronRightIcon className="size-5 shrink-0 stroke-ink-faint" />
+      <Icon name="chevron_right" size={22} color="var(--color-ink-faint)" />
     </Link>
   );
 }

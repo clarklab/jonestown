@@ -1,25 +1,22 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import {
-  ArrowDownTrayIcon,
-  ArrowsRightLeftIcon,
-  HeartIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
 import { Header } from "~/components/Header";
+import { Icon } from "~/components/Icon";
 import { Stars } from "~/components/Stars";
 import { UserChip } from "~/components/UserChip";
 import {
   useAggregates,
   useAllDishes,
   useAllVisits,
+  useCurrentCouple,
   useCurrentUser,
 } from "~/data/hooks";
-import { USERS, type UserId } from "~/data/types";
+import { memberOf, type UserId } from "~/data/types";
 import { exportAll, getDb } from "~/data/db";
 
 export function ProfilePage() {
   const [user, setUser] = useCurrentUser();
+  const couple = useCurrentCouple();
   const visits = useAllVisits();
   const dishes = useAllDishes();
   const aggs = useAggregates();
@@ -49,7 +46,7 @@ export function ProfilePage() {
     return all.reduce((s, n) => s + n, 0) / all.length;
   }, [myVisits, myDishes]);
 
-  const partner: UserId = user === "clark" ? "angie" : "clark";
+  const partner: UserId = user === "a" ? "b" : "a";
 
   // Number of restaurants where you've reviewed but partner hasn't, and vice versa.
   const yourSoloUnlocks = aggs.list.filter(
@@ -64,11 +61,12 @@ export function ProfilePage() {
   ).length;
 
   const handleExport = async () => {
-    const blob = await exportAll();
+    if (!couple) return;
+    const blob = await exportAll(couple.id);
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `jonestown-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `${couple.slug}-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -95,7 +93,7 @@ export function ProfilePage() {
     window.location.reload();
   };
 
-  const u = USERS[user];
+  const u = memberOf(couple, user);
   return (
     <div className="pb-12">
       <Header />
@@ -111,7 +109,7 @@ export function ProfilePage() {
       <section className="mt-5 px-4">
         <div className="rounded-3xl bg-surface p-1.5 ring-1 ring-inset ring-line">
           <div className="flex rounded-[20px] bg-surface-2 p-1">
-            {(["clark", "angie"] as UserId[]).map((id) => {
+            {(["a", "b"] as UserId[]).map((id) => {
               const active = user === id;
               return (
                 <button
@@ -131,10 +129,10 @@ export function ProfilePage() {
                     <UserChip id={id} size="sm" />
                     <span
                       style={{
-                        color: active ? USERS[id].accent : "var(--color-ink-dim)",
+                        color: active ? memberOf(couple, id).accent : "var(--color-ink-dim)",
                       }}
                     >
-                      {USERS[id].name}
+                      {memberOf(couple, id).name}
                     </span>
                   </span>
                 </button>
@@ -170,7 +168,7 @@ export function ProfilePage() {
             />
             <StandoffSide
               user={partner}
-              label={`${USERS[partner].name} is waiting on`}
+              label={`${memberOf(couple, partner).name} is waiting on`}
               count={partnerSoloUnlocks}
             />
           </div>
@@ -180,7 +178,7 @@ export function ProfilePage() {
       {favoriteDishes.length > 0 ? (
         <section className="mt-8 px-5">
           <div className="flex items-center gap-2">
-            <HeartIcon className="size-4 stroke-current" style={{ color: u.accent }} />
+            <Icon name="favorite" size={18} variant="fill" color={u.accent} />
             <h2 className="display text-lg text-ink">Your top dishes</h2>
           </div>
           <div className="mt-3 flex flex-col gap-2">
@@ -206,9 +204,9 @@ export function ProfilePage() {
         <h2 className="display text-lg px-1 text-ink">Settings</h2>
         <div className="mt-2 flex flex-col gap-2">
           <SettingRow
-            icon={<ArrowsRightLeftIcon className="size-5 stroke-current" />}
+            icon={<Icon name="swap_horiz" size={22} color="currentColor" />}
             label="Switch user"
-            description="Toggle between Clark and Angie above."
+            description="Toggle between the two of you above."
           />
           <button
             type="button"
@@ -216,7 +214,7 @@ export function ProfilePage() {
             className="pressable flex items-center gap-3 rounded-2xl bg-surface p-3 text-left ring-1 ring-inset ring-line"
           >
             <span className="flex size-10 items-center justify-center rounded-xl bg-tennis-200 ring-1 ring-inset ring-tennis-500/30">
-              <ArrowDownTrayIcon className="size-5 stroke-ink" />
+              <Icon name="download" size={22} color="var(--color-ink)" />
             </span>
             <span className="min-w-0 flex-1">
               <span className="block text-sm font-bold text-ink">
@@ -243,9 +241,10 @@ export function ProfilePage() {
                   : "bg-surface-2 ring-line"
               }`}
             >
-              <TrashIcon
-                className="size-5 stroke-current"
-                style={{ color: confirmClear ? "var(--color-angie-700)" : "var(--color-ink-dim)" }}
+              <Icon
+                name="delete"
+                size={22}
+                color={confirmClear ? "var(--color-angie-700)" : "var(--color-ink-dim)"}
               />
             </span>
             <span className="min-w-0 flex-1">
@@ -295,7 +294,8 @@ function StandoffSide({
   label: string;
   count: number;
 }) {
-  const u = USERS[user];
+  const couple = useCurrentCouple();
+  const u = memberOf(couple, user);
   return (
     <div
       className="relative overflow-hidden rounded-2xl p-3 ring-1 ring-inset ring-line"

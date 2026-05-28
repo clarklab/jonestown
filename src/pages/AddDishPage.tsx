@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CheckIcon } from "@heroicons/react/24/outline";
 import { Header } from "~/components/Header";
+import { Icon } from "~/components/Icon";
 import { Stars, StarInput } from "~/components/Stars";
 import { PhotoCapture } from "~/components/PhotoCapture";
 import { UserChip } from "~/components/UserChip";
-import { useCurrentUser, useDishes } from "~/data/hooks";
+import { useCurrentCouple, useCurrentUser, useDishes } from "~/data/hooks";
 import { deleteDish, saveDish, savePhoto } from "~/data/db";
 import { formatDateLong } from "~/utils/format";
 import { getDb } from "~/data/db";
-import { USERS, type Visit } from "~/data/types";
+import { memberOf, type Visit } from "~/data/types";
 
 export function AddDishPage() {
   const { id: restaurantId, visitId } = useParams<{
@@ -17,6 +17,7 @@ export function AddDishPage() {
     visitId: string;
   }>();
   const navigate = useNavigate();
+  const couple = useCurrentCouple();
   const [user] = useCurrentUser();
   const existingDishes = useDishes({ visitId });
   const [visit, setVisit] = useState<Visit | null>(null);
@@ -42,12 +43,13 @@ export function AddDishPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canSave) return;
+    if (!canSave || !couple) return;
     setSaving(true);
     let photoId: string | undefined;
-    if (photoBlob) photoId = await savePhoto(photoBlob);
+    if (photoBlob) photoId = await savePhoto(photoBlob, couple.id);
     await saveDish({
       id: crypto.randomUUID(),
+      coupleId: couple.id,
       visitId,
       restaurantId,
       userId: user,
@@ -76,7 +78,7 @@ export function AddDishPage() {
             disabled={!canSave || saving}
             className="pressable relative flex items-center gap-1.5 rounded-full bg-tennis-300 px-3 py-1.5 text-sm font-bold text-ink ring-1 ring-inset ring-tennis-500/30 disabled:opacity-40"
           >
-            <CheckIcon className="size-4 stroke-current [stroke-width:2.5]" />
+            <Icon name="check" size={18} weight={700} color="currentColor" />
             Add
             <span className="pointer-events-none absolute inset-0 -m-2" aria-hidden="true" />
           </button>
@@ -131,7 +133,7 @@ export function AddDishPage() {
                 value={rating}
                 onChange={setRating}
                 size="lg"
-                color={USERS[user].accent}
+                color={memberOf(couple, user).accent}
               />
               <span className="display-tight text-3xl tabular-nums text-ink">
                 {rating > 0 ? rating.toFixed(1) : "—"}
@@ -162,7 +164,7 @@ export function AddDishPage() {
             disabled={!canSave || saving}
             className="pressable mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-tennis-300 py-3.5 text-base font-bold text-ink ring-1 ring-inset ring-tennis-500/30 shadow-[0_22px_50px_-12px_oklch(0.7_0.2_120_/_0.4)] disabled:opacity-40"
           >
-            <CheckIcon className="size-5 stroke-ink [stroke-width:2.5]" />
+            <Icon name="check" size={22} weight={700} color="var(--color-ink)" />
             {saving ? "Adding…" : "Add dish"}
           </button>
         </form>
@@ -184,7 +186,7 @@ export function AddDishPage() {
                     <Stars
                       value={d.rating}
                       size="xs"
-                      color={USERS[d.userId].accent}
+                      color={memberOf(couple, d.userId).accent}
                     />
                   </div>
                   <span className="shrink-0 text-xs font-bold tabular-nums text-ink-muted">
