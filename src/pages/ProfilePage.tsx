@@ -152,6 +152,12 @@ export function ProfilePage() {
         />
       </section>
 
+      {couple ? (
+        <section className="mt-5 px-4">
+          <InviteCard couple={couple} />
+        </section>
+      ) : null}
+
       <section className="mt-5 px-4">
         <div className="rounded-3xl bg-surface p-4 ring-1 ring-inset ring-line">
           <p className="text-[11px] font-bold tracking-[0.18em] text-ink-dim uppercase">
@@ -281,6 +287,99 @@ function Stat({
         {label}
       </p>
       <p className="display-tight mt-1.5 text-3xl tabular-nums text-ink">{value}</p>
+    </div>
+  );
+}
+
+function InviteCard({ couple }: { couple: { slug: string; name: string } }) {
+  const [copied, setCopied] = useState<"slug" | "link" | null>(null);
+  const link =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/join?slug=${couple.slug}`
+      : `/join?slug=${couple.slug}`;
+
+  const copy = async (text: string, kind: "slug" | "link") => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(kind);
+      setTimeout(() => setCopied(null), 1500);
+    } catch {
+      // ignore
+    }
+  };
+
+  const share = async () => {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: `Join ${couple.name} on Jonestown`,
+          text: `Join our two-fork supper club — code: ${couple.slug}`,
+          url: link,
+        });
+        return;
+      } catch {
+        // fall through to clipboard
+      }
+    }
+    void copy(link, "link");
+  };
+
+  return (
+    <div className="relative overflow-hidden rounded-3xl bg-surface p-4 ring-1 ring-inset ring-line">
+      <div
+        className="pointer-events-none absolute -top-12 -right-12 size-40 rounded-full opacity-25 blur-2xl"
+        style={{ background: "var(--color-tennis-300)" }}
+        aria-hidden="true"
+      />
+      <p className="text-[11px] font-bold tracking-[0.18em] text-ink-dim uppercase">
+        Invite your partner
+      </p>
+      <p className="mt-1 text-sm text-ink-muted">
+        Send the code or the link. They'll see your map.
+      </p>
+      <div className="mt-3 flex items-center gap-2 rounded-2xl bg-surface-2 px-3 py-2 ring-1 ring-inset ring-line">
+        <Icon name="key" size={18} variant="fill" color="var(--color-tennis-700)" />
+        <span className="font-mono text-sm font-bold tracking-tight text-ink">
+          /{couple.slug}
+        </span>
+        <button
+          type="button"
+          onClick={() => copy(couple.slug, "slug")}
+          aria-label="Copy code"
+          className="pressable relative ml-auto flex size-8 items-center justify-center rounded-full bg-paper ring-1 ring-inset ring-line"
+        >
+          <Icon
+            name={copied === "slug" ? "check" : "content_copy"}
+            size={16}
+            weight={600}
+            color={copied === "slug" ? "var(--color-tennis-700)" : "var(--color-ink)"}
+          />
+          <span className="pointer-events-none absolute inset-0 -m-2" aria-hidden="true" />
+        </button>
+      </div>
+      <div className="mt-2 flex gap-2">
+        <button
+          type="button"
+          onClick={share}
+          className="pressable flex flex-1 items-center justify-center gap-2 rounded-2xl bg-tennis-300 py-2.5 text-sm font-bold text-ink ring-1 ring-inset ring-tennis-500/30"
+        >
+          <Icon name="ios_share" size={18} weight={700} color="var(--color-ink)" />
+          Share invite
+        </button>
+        <button
+          type="button"
+          onClick={() => copy(link, "link")}
+          className="pressable flex items-center justify-center gap-2 rounded-2xl bg-surface px-3 py-2.5 text-sm font-bold text-ink ring-1 ring-inset ring-line"
+        >
+          <Icon
+            name={copied === "link" ? "check" : "link"}
+            size={18}
+            weight={600}
+            color={copied === "link" ? "var(--color-tennis-700)" : "var(--color-ink)"}
+          />
+          {copied === "link" ? "Copied" : "Copy link"}
+        </button>
+      </div>
     </div>
   );
 }

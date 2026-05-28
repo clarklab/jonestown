@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Icon } from "~/components/Icon";
 import {
   ensureSeeded,
@@ -13,7 +13,9 @@ import type { Couple, CoupleBadge, Member, MemberSlot } from "~/data/types";
 
 export function JoinPage() {
   const navigate = useNavigate();
-  const [slug, setSlug] = useState("");
+  const [searchParams] = useSearchParams();
+  const initialSlug = searchParams.get("slug") ?? "";
+  const [slug, setSlug] = useState(initialSlug);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<{
@@ -24,6 +26,12 @@ export function JoinPage() {
     badge: CoupleBadge;
   } | null>(null);
   const [me, setMe] = useState<MemberSlot>("a");
+
+  // Auto-lookup if slug was provided via URL.
+  useEffect(() => {
+    if (initialSlug) void handleLookup();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleLookup = async () => {
     if (!slug.trim()) return;

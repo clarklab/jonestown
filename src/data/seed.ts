@@ -8,6 +8,13 @@ export const SEED_RESTAURANTS: Array<
   Pick<Restaurant, "id" | "name" | "cuisine" | "area" | "address" | "notes">
 > = [
   {
+    id: "bamboo-garden",
+    name: "Bamboo Garden Wok 'N' Grill",
+    cuisine: "Chinese · Wok",
+    area: "Jonestown",
+    notes: "Our first pick.",
+  },
+  {
     id: "reeds-jazz",
     name: "Reed's Jazz & Supper Club",
     cuisine: "American · Steak",

@@ -88,6 +88,11 @@ export function HomePage() {
               border="oklch(0.55 0.21 25)"
             />
           </div>
+
+          {aggs.bothRatedCount === 0 &&
+          aggs.list.filter((a) => a.verdict.status === "solo").length === 0 ? (
+            <MapEmptyNudge />
+          ) : null}
         </div>
 
         {/* Big tagline */}
@@ -215,6 +220,31 @@ function applySort(list: RestaurantAggregate[], sort: SortKey) {
         );
       });
   }
+}
+
+function MapEmptyNudge() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ type: "spring", stiffness: 280, damping: 24, delay: 0.3 }}
+      className="pointer-events-none absolute inset-x-6 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2 rounded-2xl bg-paper/90 px-4 py-3 text-center backdrop-blur-md ring-1 ring-inset ring-line shadow-[0_18px_40px_-12px_oklch(0_0_0_/_0.18)]"
+    >
+      <div className="flex size-9 items-center justify-center rounded-full bg-tennis-300">
+        <Icon name="my_location" size={20} variant="fill" weight={600} color="var(--color-ink)" />
+      </div>
+      <p className="display-tight text-base text-ink">
+        Your town's still fogged in.
+      </p>
+      <p className="max-w-[28ch] text-xs text-ink-muted">
+        Tap the big{" "}
+        <span className="inline-flex size-4 -translate-y-px items-center justify-center rounded-full bg-tennis-300">
+          <Icon name="add" size={12} weight={700} color="var(--color-ink)" />
+        </span>{" "}
+        to log your first visit. Pins unlock as you both rate.
+      </p>
+    </motion.div>
+  );
 }
 
 function ProgressChip({

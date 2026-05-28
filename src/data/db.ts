@@ -99,99 +99,165 @@ export function getDb(): Promise<IDBPDatabase<JonestownDB>> {
 /**
  * Migrate any legacy records (no coupleId, or userId === "clark"/"angie")
  * onto the default couple. Idempotent.
+ *
+ * Only creates the default couple + selects it as current when there was
+ * pre-existing data to migrate — fresh installs land on the LandingPage
+ * untouched.
  */
 export async function migrateLegacyData(): Promise<void> {
   const db = await getDb();
   const migrationFlag = await db.get("meta", "migrated:v2");
   if (migrationFlag) return;
 
-  // Ensure default couple exists
-  const existingDefault = await db.get("couples", DEFAULT_COUPLE.id);
-  if (!existingDefault) {
-    const now = Date.now();
-    await db.put("couples", {
-      ...DEFAULT_COUPLE,
-      createdAt: now,
-      updatedAt: now,
-    });
-  }
+  // Detect legacy data before touching anything.
+  const [restCount, visitCount, dishCount] = await Promise.all([
+    db.count("restaurants"),
+    db.count("visits"),
+    db.count("dishes"),
+  ]);
+  const hadLegacyData = restCount + visitCount + dishCount > 0;
 
-  // Tag legacy records onto the default couple, and map clark/angie -> a/b.
-  const remap = (uid: string): UserId =>
-    uid === "clark" ? "a" : uid === "angie" ? "b" : (uid as UserId);
-
-  const tx = db.transaction(
-    ["restaurants", "visits", "dishes", "photos", "meta"],
-    "readwrite",
-  );
-
-  for await (const cursor of tx.objectStore("restaurants").iterate()) {
-    if (!cursor.value.coupleId) {
-      await cursor.update({ ...cursor.value, coupleId: DEFAULT_COUPLE.id });
-    }
-  }
-  for await (const cursor of tx.objectStore("visits").iterate()) {
-    const v = cursor.value;
-    const uid = v.userId as unknown as string;
-    if (!v.coupleId || uid === "clark" || uid === "angie") {
-      await cursor.update({
-        ...v,
-        coupleId: v.coupleId ?? DEFAULT_COUPLE.id,
-        userId: remap(uid),
+  if (hadLegacyData) {
+    const existingDefault = await db.get("couples", DEFAULT_COUPLE.id);
+    if (!existingDefault) {
+      const now = Date.now();
+      await db.put("couples", {
+        ...DEFAULT_COUPLE,
+        createdAt: now,
+        updatedAt: now,
       });
     }
-  }
-  for await (const cursor of tx.objectStore("dishes").iterate()) {
-    const d = cursor.value;
-    const uid = d.userId as unknown as string;
-    if (!d.coupleId || uid === "clark" || uid === "angie") {
-      await cursor.update({
-        ...d,
-        coupleId: d.coupleId ?? DEFAULT_COUPLE.id,
-        userId: remap(uid),
-      });
+
+    const remap = (uid: string): UserId =>
+      uid === "clark" ? "a" : uid === "angie" ? "b" : (uid as UserId);
+
+    const tx = db.transaction(
+      ["restaurants", "visits", "dishes", "photos", "meta"],
+      "readwrite",
+    );
+
+    for await (const cursor of tx.objectStore("restaurants").iterate()) {
+      if (!cursor.value.coupleId) {
+        await cursor.update({ ...cursor.value, coupleId: DEFAULT_COUPLE.id });
+      }
     }
-  }
-  for await (const cursor of tx.objectStore("photos").iterate()) {
-    if (!cursor.value.coupleId) {
-      await cursor.update({ ...cursor.value, coupleId: DEFAULT_COUPLE.id });
+    for await (const cursor of tx.objectStore("visits").iterate()) {
+      const v = cursor.value;
+      const uid = v.userId as unknown as string;
+      if (!v.coupleId || uid === "clark" || uid === "angie") {
+        await cursor.update({
+          ...v,
+          coupleId: v.coupleId ?? DEFAULT_COUPLE.id,
+          userId: remap(uid),
+        });
+      }
     }
+    for await (const cursor of tx.objectStore("dishes").iterate()) {
+      const d = cursor.value;
+      const uid = d.userId as unknown as string;
+      if (!d.coupleId || uid === "clark" || uid === "angie") {
+        await cursor.update({
+          ...d,
+          coupleId: d.coupleId ?? DEFAULT_COUPLE.id,
+          userId: remap(uid),
+        });
+      }
+    }
+    for await (const cursor of tx.objectStore("photos").iterate()) {
+      if (!cursor.value.coupleId) {
+        await cursor.update({ ...cursor.value, coupleId: DEFAULT_COUPLE.id });
+      }
+    }
+
+    const cu = await tx.objectStore("meta").get("currentUser");
+    if (cu?.value === "clark" || cu?.value === "angie") {
+      await tx
+        .objectStore("meta")
+        .put({ key: "currentUser", value: remap(cu.value as string) });
+    }
+
+    // Auto-select the default couple so the legacy install lands back on
+    // its map after the upgrade.
+    const currentCouple = await tx.objectStore("meta").get("currentCouple");
+    if (!currentCouple) {
+      await tx
+        .objectStore("meta")
+        .put({ key: "currentCouple", value: DEFAULT_COUPLE.id });
+    }
+
+    await tx.done;
+    emitChange("couples");
   }
 
-  // If a currentUser was stored as "clark"/"angie", remap it.
-  const cu = await tx.objectStore("meta").get("currentUser");
-  if (cu?.value === "clark" || cu?.value === "angie") {
-    await tx
-      .objectStore("meta")
-      .put({ key: "currentUser", value: remap(cu.value as string) });
-  }
-
-  await tx.objectStore("meta").put({ key: "migrated:v2", value: true });
-  await tx.done;
-  emitChange("couples");
+  await db.put("meta", { key: "migrated:v2", value: true });
 }
 
 export async function ensureSeeded(coupleId: string): Promise<void> {
   const db = await getDb();
   const seedKey = `seeded:${coupleId}`;
   const seededFlag = await db.get("meta", seedKey);
-  if (seededFlag) return;
-  const tx = db.transaction(["restaurants", "meta"], "readwrite");
-  const now = Date.now();
-  for (const r of SEED_RESTAURANTS) {
-    const id =
-      coupleId === DEFAULT_COUPLE.id ? r.id : `${coupleId}:${r.id}`;
-    await tx.objectStore("restaurants").put({
-      ...r,
-      id,
-      coupleId,
-      createdAt: now,
-      updatedAt: now,
-    });
+  const isDefault = coupleId === DEFAULT_COUPLE.id;
+  if (!seededFlag) {
+    const tx = db.transaction(["restaurants", "meta"], "readwrite");
+    const now = Date.now();
+    for (const r of SEED_RESTAURANTS) {
+      const id = isDefault ? r.id : `${coupleId}:${r.id}`;
+      await tx.objectStore("restaurants").put({
+        ...r,
+        id,
+        coupleId,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+    await tx.objectStore("meta").put({ key: seedKey, value: true });
+    await tx.done;
+    emitChange("restaurants");
   }
-  await tx.objectStore("meta").put({ key: seedKey, value: true });
-  await tx.done;
-  emitChange("restaurants");
+
+  // For Jonestown TX couples (the original audience), pre-rate Bamboo Garden
+  // 4★ from both members. Their first pick, by default. Other towns get a
+  // clean slate. Idempotent per-couple via a flag.
+  const couple = await db.get("couples", coupleId);
+  const isJonestown =
+    !!couple && /jonestown|78645/i.test(couple.town ?? "");
+  if (isJonestown) {
+    const bambooFlag = await db.get("meta", `bamboo:${coupleId}:v1`);
+    if (!bambooFlag) {
+      const restId = isDefault ? "bamboo-garden" : `${coupleId}:bamboo-garden`;
+      const exists = await db.get("restaurants", restId);
+      if (exists) {
+        const tx = db.transaction(["visits", "meta"], "readwrite");
+        const date = Date.now() - 7 * 24 * 60 * 60 * 1000; // a week ago
+        await tx.objectStore("visits").put({
+          id: `${coupleId}-a-bamboo`,
+          coupleId,
+          restaurantId: restId,
+          userId: "a",
+          date,
+          rating: 4,
+          notes: "Pepper steak is the move. Wok hei for days.",
+          occasion: "Friday night",
+          createdAt: date,
+        });
+        await tx.objectStore("visits").put({
+          id: `${coupleId}-b-bamboo`,
+          coupleId,
+          restaurantId: restId,
+          userId: "b",
+          date: date + 1000,
+          rating: 4,
+          notes: "Generous portions. Hot and sour soup hit.",
+          createdAt: date + 1000,
+        });
+        await tx
+          .objectStore("meta")
+          .put({ key: `bamboo:${coupleId}:v1`, value: true });
+        await tx.done;
+        emitChange("visits");
+      }
+    }
+  }
 }
 
 export const eventBus = new EventTarget();
