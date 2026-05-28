@@ -1,0 +1,97 @@
+import { getStore } from "@netlify/blobs";
+
+/**
+ * Photo storage. Photos are uploaded by the client and addressed by id.
+ *
+ * POST /api/photo                  → multipart upload { id?, file } → { id }
+ * GET  /api/photo/:id              → serves the image bytes
+ */
+
+function getPhotoStore() {
+  return getStore({ name: "jonestown-photos", consistency: "strong" });
+}
+
+function uuid() {
+  return globalThis.crypto?.randomUUID
+    ? globalThis.crypto.randomUUID()
+    : Math.random().toString(36).slice(2) +
+      "-" +
+      Math.random().toString(36).slice(2);
+}
+
+export default async (req: Request): Promise<Response> => {
+  try {
+    const url = new URL(req.url);
+    const segments = url.pathname.split("/").filter(Boolean);
+    // path is /api/photo OR /api/photo/<id>
+    const id = segments.length >= 3 ? segments[segments.length - 1] : null;
+
+    if (req.method === "POST") {
+      const ct = req.headers.get("content-type") ?? "";
+      const store = getPhotoStore();
+
+      let bodyBuffer: ArrayBuffer;
+      let type = "application/octet-stream";
+      let providedId: string | null = null;
+
+      if (ct.startsWith("multipart/form-data")) {
+        const form = await req.formData();
+        const file = form.get("file");
+        if (!(file instanceof Blob)) {
+          return new Response(JSON.stringify({ error: "missing file" }), {
+            status: 400,
+          });
+        }
+        bodyBuffer = await file.arrayBuffer();
+        type = file.type || type;
+        const i = form.get("id");
+        providedId = typeof i === "string" && i ? i : null;
+      } else {
+        bodyBuffer = await req.arrayBuffer();
+        type = ct || type;
+        providedId = req.headers.get("x-photo-id");
+      }
+
+      const photoId = providedId || uuid();
+      await store.set(photoId, bodyBuffer, {
+        metadata: { contentType: type },
+      });
+
+      return new Response(JSON.stringify({ id: photoId }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
+    if (req.method === "GET") {
+      if (!id) {
+        return new Response(JSON.stringify({ error: "missing id" }), {
+          status: 400,
+        });
+      }
+      const store = getPhotoStore();
+      const result = await store.getWithMetadata(id, { type: "arrayBuffer" });
+      if (!result) {
+        return new Response("not found", { status: 404 });
+      }
+      const contentType =
+        (result.metadata?.contentType as string | undefined) ?? "image/webp";
+      return new Response(result.data, {
+        status: 200,
+        headers: {
+          "content-type": contentType,
+          "cache-control": "public, max-age=31536000, immutable",
+        },
+      });
+    }
+
+    return new Response(JSON.stringify({ error: "method not allowed" }), {
+      status: 405,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return new Response(JSON.stringify({ error: message }), { status: 500 });
+  }
+};
+
+export const config = { path: "/api/photo*" };

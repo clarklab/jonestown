@@ -21,7 +21,9 @@ export function Header({
   return (
     <header
       className={`sticky top-0 z-30 flex items-center gap-3 px-4 pt-3 pb-3 ${
-        transparent ? "" : "glass border-b border-white/5"
+        transparent
+          ? ""
+          : "bg-paper/85 backdrop-blur-xl border-b border-line"
       }`}
       style={{
         paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.5rem)",
@@ -32,7 +34,7 @@ export function Header({
           type="button"
           onClick={() => navigate(-1)}
           aria-label="Back"
-          className="pressable relative -ml-1 flex size-9 items-center justify-center rounded-full bg-bg-card/70 ring-1 ring-inset ring-white/10"
+          className="pressable relative -ml-1 flex size-10 items-center justify-center rounded-full bg-surface ring-1 ring-inset ring-line"
         >
           <ArrowLeftIcon className="size-5 stroke-ink" />
           <span
@@ -55,29 +57,23 @@ export function Header({
 
 function BrandMark() {
   return (
-    <div className="flex items-center gap-2.5">
+    <div className="flex items-center gap-2">
       <div
-        className="relative flex size-9 items-center justify-center rounded-full ring-1 ring-flame-400/40"
+        className="relative flex size-10 items-center justify-center rounded-[14px] ring-1 ring-inset ring-black/5"
         style={{
           background:
-            "radial-gradient(120% 120% at 30% 25%, oklch(0.82 0.18 60) 0%, oklch(0.55 0.21 40) 100%)",
+            "linear-gradient(135deg, var(--color-tennis-200) 0%, var(--color-tennis-400) 80%)",
         }}
         aria-hidden="true"
       >
-        <span className="display text-[18px] leading-none text-bg">J</span>
+        <span className="display-tight text-[20px] leading-none text-ink">
+          J
+        </span>
       </div>
       <div className="flex flex-col leading-none">
-        <span
-          className="display text-[20px] text-ink"
-          style={{ textShadow: "0 1px 8px oklch(0 0 0 / 0.4)" }}
-        >
-          Jonestown
-        </span>
-        <span
-          className="text-[10px] tracking-[0.18em] text-ink-muted uppercase"
-          style={{ textShadow: "0 1px 8px oklch(0 0 0 / 0.4)" }}
-        >
-          Supper Club
+        <span className="display-tight text-[18px] text-ink">Jonestown</span>
+        <span className="text-[10px] tracking-[0.18em] text-ink-dim uppercase">
+          Two-Fork Club
         </span>
       </div>
     </div>
@@ -93,10 +89,10 @@ export function UserPicker() {
         type="button"
         aria-label={`Logging as ${USERS[user].name}`}
         onClick={() => setOpen((o) => !o)}
-        className="pressable relative flex items-center gap-2 rounded-full bg-bg-card/70 py-1 pr-2.5 pl-1 ring-1 ring-inset ring-white/10"
+        className="pressable relative flex items-center gap-2 rounded-full bg-surface py-1 pr-3 pl-1 ring-1 ring-inset ring-line"
       >
         <UserChip id={user} size="sm" />
-        <span className="text-xs font-medium text-ink-muted">
+        <span className="text-xs font-bold text-ink">
           {USERS[user].name}
         </span>
         <span
@@ -120,9 +116,9 @@ export function UserPicker() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.96 }}
               transition={{ type: "spring", stiffness: 400, damping: 28 }}
-              className="absolute top-full right-0 z-40 mt-2 w-44 overflow-hidden rounded-2xl bg-bg-elev/95 backdrop-blur-md ring-1 ring-white/10 shadow-2xl"
+              className="absolute top-full right-0 z-40 mt-2 w-44 overflow-hidden rounded-2xl bg-surface ring-1 ring-line shadow-[0_30px_60px_-20px_oklch(0_0_0_/_0.25)]"
             >
-              <div className="border-b border-white/5 px-3 pt-2.5 pb-1.5 text-[10px] tracking-[0.18em] text-ink-dim uppercase">
+              <div className="border-b border-line px-3 pt-2.5 pb-1.5 text-[10px] font-bold tracking-[0.18em] text-ink-dim uppercase">
                 Logging as
               </div>
               {(Object.keys(USERS) as UserId[]).map((id) => (
@@ -134,15 +130,18 @@ export function UserPicker() {
                     setOpen(false);
                   }}
                   className={`flex w-full items-center gap-3 px-3 py-2.5 text-left ${
-                    user === id ? "bg-white/5" : ""
+                    user === id ? "bg-tennis-100" : ""
                   }`}
                 >
                   <UserChip id={id} size="md" />
-                  <span className="flex-1 text-sm font-medium text-ink">
+                  <span className="flex-1 text-sm font-bold text-ink">
                     {USERS[id].name}
                   </span>
                   {user === id ? (
-                    <span className="size-1.5 rounded-full bg-flame-400" />
+                    <span
+                      className="size-2 rounded-full"
+                      style={{ background: USERS[id].accent }}
+                    />
                   ) : null}
                 </button>
               ))}

@@ -15,9 +15,9 @@ export default defineConfig({
         name: "Jonestown",
         short_name: "Jonestown",
         description:
-          "A private restaurant review club for Clark & Angie — Jonestown, TX",
-        theme_color: "#0b0a09",
-        background_color: "#0b0a09",
+          "An unlockable map of Jonestown, TX. Clark & Angie's two-fork supper club.",
+        theme_color: "#fafaf9",
+        background_color: "#fafaf9",
         display: "standalone",
         orientation: "portrait",
         scope: "/",
@@ -35,16 +35,24 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
+        navigateFallbackDenylist: [/^\/\.netlify/, /^\/api/],
         runtimeCaching: [
           {
             urlPattern: ({ url }) =>
-              url.origin === "https://rsms.me" ||
               url.origin === "https://fonts.googleapis.com" ||
               url.origin === "https://fonts.gstatic.com",
             handler: "CacheFirst",
             options: {
               cacheName: "fonts",
               expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith("/api/"),
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "api",
+              networkTimeoutSeconds: 4,
             },
           },
         ],

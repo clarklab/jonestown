@@ -219,11 +219,25 @@ export async function deleteDish(id: string): Promise<void> {
 
 // ---- Photos ----
 
+// Optional sync hooks — wired up by sync.ts. Keeps db.ts free of server deps.
+let onPhotoSaved: ((p: Photo) => void) | null = null;
+let onPhotoMiss: ((id: string) => Promise<Blob | null>) | null = null;
+
+export function registerPhotoHooks(hooks: {
+  onPhotoSaved?: (p: Photo) => void;
+  onPhotoMiss?: (id: string) => Promise<Blob | null>;
+}): void {
+  onPhotoSaved = hooks.onPhotoSaved ?? onPhotoSaved;
+  onPhotoMiss = hooks.onPhotoMiss ?? onPhotoMiss;
+}
+
 export async function savePhoto(blob: Blob): Promise<string> {
   const db = await getDb();
   const id = crypto.randomUUID();
-  await db.put("photos", { id, blob, createdAt: Date.now() });
+  const photo: Photo = { id, blob, createdAt: Date.now() };
+  await db.put("photos", photo);
   emitChange("photos");
+  onPhotoSaved?.(photo);
   return id;
 }
 
@@ -233,14 +247,38 @@ export async function getPhoto(id: string): Promise<Photo | undefined> {
 }
 
 const _photoUrlCache = new Map<string, string>();
+const _photoFetchInflight = new Map<string, Promise<string | undefined>>();
 
 export async function getPhotoUrl(id: string): Promise<string | undefined> {
   if (_photoUrlCache.has(id)) return _photoUrlCache.get(id);
   const photo = await getPhoto(id);
-  if (!photo) return undefined;
-  const url = URL.createObjectURL(photo.blob);
-  _photoUrlCache.set(id, url);
-  return url;
+  if (photo) {
+    const url = URL.createObjectURL(photo.blob);
+    _photoUrlCache.set(id, url);
+    return url;
+  }
+  // Local miss — see if a sync hook can pull it
+  if (onPhotoMiss) {
+    const existing = _photoFetchInflight.get(id);
+    if (existing) return existing;
+    const promise = (async () => {
+      const fetched = await onPhotoMiss!(id);
+      if (!fetched) return undefined;
+      const db = await getDb();
+      await db.put("photos", { id, blob: fetched, createdAt: Date.now() });
+      const url = URL.createObjectURL(fetched);
+      _photoUrlCache.set(id, url);
+      emitChange("photos");
+      return url;
+    })();
+    _photoFetchInflight.set(id, promise);
+    try {
+      return await promise;
+    } finally {
+      _photoFetchInflight.delete(id);
+    }
+  }
+  return undefined;
 }
 
 export function clearPhotoUrlCache() {

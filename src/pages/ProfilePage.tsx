@@ -49,6 +49,20 @@ export function ProfilePage() {
     return all.reduce((s, n) => s + n, 0) / all.length;
   }, [myVisits, myDishes]);
 
+  const partner: UserId = user === "clark" ? "angie" : "clark";
+
+  // Number of restaurants where you've reviewed but partner hasn't, and vice versa.
+  const yourSoloUnlocks = aggs.list.filter(
+    (a) =>
+      a.ratingByUser[user] !== undefined &&
+      a.ratingByUser[partner] === undefined,
+  ).length;
+  const partnerSoloUnlocks = aggs.list.filter(
+    (a) =>
+      a.ratingByUser[partner] !== undefined &&
+      a.ratingByUser[user] === undefined,
+  ).length;
+
   const handleExport = async () => {
     const blob = await exportAll();
     const url = URL.createObjectURL(blob);
@@ -81,21 +95,22 @@ export function ProfilePage() {
     window.location.reload();
   };
 
+  const u = USERS[user];
   return (
     <div className="pb-12">
       <Header />
       <section className="px-5">
-        <p className="text-[11px] tracking-[0.22em] text-flame-200/80 uppercase">
+        <p className="text-[11px] font-bold tracking-[0.22em] text-ink-dim uppercase">
           Profile
         </p>
-        <h1 className="display mt-1 text-3xl tracking-tight text-ink">
-          Hey, {USERS[user].name}.
+        <h1 className="display-tight mt-1 text-3xl tracking-tight text-ink">
+          Hey, <span style={{ color: u.accent }}>{u.name}</span>.
         </h1>
       </section>
 
       <section className="mt-5 px-4">
-        <div className="rounded-3xl bg-bg-card p-1.5 ring-1 ring-inset ring-white/5">
-          <div className="flex rounded-[20px] bg-bg/40 p-1">
+        <div className="rounded-3xl bg-surface p-1.5 ring-1 ring-inset ring-line">
+          <div className="flex rounded-[20px] bg-surface-2 p-1">
             {(["clark", "angie"] as UserId[]).map((id) => {
               const active = user === id;
               return (
@@ -103,19 +118,21 @@ export function ProfilePage() {
                   key={id}
                   type="button"
                   onClick={() => setUser(id)}
-                  className="relative flex flex-1 items-center justify-center gap-2 rounded-2xl py-2 text-sm font-semibold"
+                  className="relative flex flex-1 items-center justify-center gap-2 rounded-2xl py-2 text-sm font-bold"
                 >
                   {active ? (
                     <motion.span
                       layoutId="profile-active"
-                      className="absolute inset-0 rounded-2xl bg-bg-card shadow-[0_8px_24px_-12px_oklch(0_0_0_/_0.8)] ring-1 ring-inset ring-white/10"
+                      className="absolute inset-0 rounded-2xl bg-surface shadow-[0_8px_24px_-12px_oklch(0_0_0_/_0.18)] ring-1 ring-inset ring-line"
                       transition={{ type: "spring", stiffness: 400, damping: 28 }}
                     />
                   ) : null}
                   <span className="relative flex items-center gap-2">
                     <UserChip id={id} size="sm" />
                     <span
-                      className={active ? "text-ink" : "text-ink-dim"}
+                      style={{
+                        color: active ? USERS[id].accent : "var(--color-ink-dim)",
+                      }}
                     >
                       {USERS[id].name}
                     </span>
@@ -137,25 +154,46 @@ export function ProfilePage() {
         />
       </section>
 
+      <section className="mt-5 px-4">
+        <div className="rounded-3xl bg-surface p-4 ring-1 ring-inset ring-line">
+          <p className="text-[11px] font-bold tracking-[0.18em] text-ink-dim uppercase">
+            Two-fork standoff
+          </p>
+          <p className="mt-1 text-sm text-ink-muted">
+            Places only one of you has hit.
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <StandoffSide
+              user={user}
+              label="You're waiting on"
+              count={yourSoloUnlocks}
+            />
+            <StandoffSide
+              user={partner}
+              label={`${USERS[partner].name} is waiting on`}
+              count={partnerSoloUnlocks}
+            />
+          </div>
+        </div>
+      </section>
+
       {favoriteDishes.length > 0 ? (
         <section className="mt-8 px-5">
           <div className="flex items-center gap-2">
-            <HeartIcon className="size-4 stroke-flame-300" />
+            <HeartIcon className="size-4 stroke-current" style={{ color: u.accent }} />
             <h2 className="display text-lg text-ink">Your top dishes</h2>
           </div>
           <div className="mt-3 flex flex-col gap-2">
             {favoriteDishes.map((d) => (
               <div
                 key={d.id}
-                className="flex items-center gap-3 rounded-2xl bg-bg-card p-3 ring-1 ring-inset ring-white/5"
+                className="flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-inset ring-line"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-ink">
-                    {d.name}
-                  </p>
-                  <Stars value={d.rating} size="xs" />
+                  <p className="truncate text-sm font-bold text-ink">{d.name}</p>
+                  <Stars value={d.rating} size="xs" color={u.accent} />
                 </div>
-                <span className="display text-xl tabular-nums text-ink">
+                <span className="display-tight text-xl tabular-nums text-ink">
                   {d.rating.toFixed(1)}
                 </span>
               </div>
@@ -175,13 +213,13 @@ export function ProfilePage() {
           <button
             type="button"
             onClick={handleExport}
-            className="pressable flex items-center gap-3 rounded-2xl bg-bg-card p-3 text-left ring-1 ring-inset ring-white/5"
+            className="pressable flex items-center gap-3 rounded-2xl bg-surface p-3 text-left ring-1 ring-inset ring-line"
           >
-            <span className="flex size-10 items-center justify-center rounded-xl bg-flame-500/10 ring-1 ring-inset ring-flame-400/20">
-              <ArrowDownTrayIcon className="size-5 stroke-flame-200" />
+            <span className="flex size-10 items-center justify-center rounded-xl bg-tennis-200 ring-1 ring-inset ring-tennis-500/30">
+              <ArrowDownTrayIcon className="size-5 stroke-ink" />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-sm font-medium text-ink">
+              <span className="block text-sm font-bold text-ink">
                 Export everything
               </span>
               <span className="block text-xs text-ink-dim">
@@ -192,27 +230,26 @@ export function ProfilePage() {
           <button
             type="button"
             onClick={handleClear}
-            className={`pressable flex items-center gap-3 rounded-2xl bg-bg-card p-3 text-left ring-1 ring-inset transition-colors ${
+            className={`pressable flex items-center gap-3 rounded-2xl p-3 text-left ring-1 ring-inset transition-colors ${
               confirmClear
-                ? "ring-flame-500/40 bg-flame-500/10"
-                : "ring-white/5"
+                ? "bg-angie-50 ring-angie-200"
+                : "bg-surface ring-line"
             }`}
           >
             <span
               className={`flex size-10 items-center justify-center rounded-xl ring-1 ring-inset ${
                 confirmClear
-                  ? "bg-flame-500/20 ring-flame-400/30"
-                  : "bg-white/5 ring-white/10"
+                  ? "bg-angie-200/50 ring-angie-200"
+                  : "bg-surface-2 ring-line"
               }`}
             >
               <TrashIcon
-                className={`size-5 stroke-current ${
-                  confirmClear ? "text-flame-100" : "text-ink-muted"
-                }`}
+                className="size-5 stroke-current"
+                style={{ color: confirmClear ? "var(--color-angie-700)" : "var(--color-ink-dim)" }}
               />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-sm font-medium text-ink">
+              <span className="block text-sm font-bold text-ink">
                 {confirmClear ? "Tap again to confirm" : "Reset all data"}
               </span>
               <span className="block text-xs text-ink-dim">
@@ -224,8 +261,8 @@ export function ProfilePage() {
       </section>
 
       <section className="mt-10 px-5">
-        <p className="text-center text-[11px] tracking-[0.22em] text-ink-faint uppercase">
-          Made with love for Jonestown, TX
+        <p className="text-center text-[11px] font-bold tracking-[0.22em] text-ink-faint uppercase">
+          Made for Jonestown, TX
         </p>
       </section>
     </div>
@@ -240,11 +277,41 @@ function Stat({
   value: string | number;
 }) {
   return (
-    <div className="rounded-2xl bg-bg-card p-3.5 ring-1 ring-inset ring-white/5">
-      <p className="text-[11px] tracking-[0.18em] text-ink-dim uppercase">
+    <div className="rounded-2xl bg-surface p-4 ring-1 ring-inset ring-line">
+      <p className="text-[11px] font-bold tracking-[0.18em] text-ink-dim uppercase">
         {label}
       </p>
-      <p className="display mt-1.5 text-3xl tabular-nums text-ink">{value}</p>
+      <p className="display-tight mt-1.5 text-3xl tabular-nums text-ink">{value}</p>
+    </div>
+  );
+}
+
+function StandoffSide({
+  user,
+  label,
+  count,
+}: {
+  user: UserId;
+  label: string;
+  count: number;
+}) {
+  const u = USERS[user];
+  return (
+    <div
+      className="relative overflow-hidden rounded-2xl p-3 ring-1 ring-inset ring-line"
+      style={{ background: `linear-gradient(135deg, ${u.accent}18, transparent 80%)` }}
+    >
+      <p className="text-[10px] font-bold tracking-[0.16em] text-ink-dim uppercase">
+        {label}
+      </p>
+      <div className="mt-1.5 flex items-baseline gap-1.5">
+        <span className="display-tight text-3xl tabular-nums" style={{ color: u.accent }}>
+          {count}
+        </span>
+        <span className="text-xs font-bold text-ink-faint">
+          spot{count === 1 ? "" : "s"}
+        </span>
+      </div>
     </div>
   );
 }
@@ -259,12 +326,12 @@ function SettingRow({
   description: string;
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-bg-card p-3 ring-1 ring-inset ring-white/5">
-      <span className="flex size-10 items-center justify-center rounded-xl bg-white/5 ring-1 ring-inset ring-white/10 text-ink-muted">
+    <div className="flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-inset ring-line">
+      <span className="flex size-10 items-center justify-center rounded-xl bg-surface-2 ring-1 ring-inset ring-line text-ink-muted">
         {icon}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-medium text-ink">{label}</span>
+        <span className="block text-sm font-bold text-ink">{label}</span>
         <span className="block text-xs text-ink-dim">{description}</span>
       </span>
     </div>

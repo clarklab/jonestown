@@ -6,78 +6,66 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = resolve(__dirname, "..", "public");
 
-// Display-serif "J" mark on warm ember radial — matches the in-app brand mark.
+// Tennis-ball yellow J on a soft gradient — matches the in-app brand mark.
 const ICON_SVG = (size) => `
 <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 512 512">
   <defs>
-    <radialGradient id="bg" cx="0.30" cy="0.22" r="0.95">
-      <stop offset="0%" stop-color="#ffb072" />
-      <stop offset="55%" stop-color="#d2602a" />
-      <stop offset="100%" stop-color="#3c1410" />
-    </radialGradient>
-    <radialGradient id="bgFlat" cx="0.30" cy="0.22" r="0.85">
-      <stop offset="0%" stop-color="#f59663" />
-      <stop offset="60%" stop-color="#b94a1f" />
-      <stop offset="100%" stop-color="#3c1410" />
-    </radialGradient>
-    <filter id="grain" x="-5%" y="-5%" width="110%" height="110%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"/>
-      <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.07 0"/>
-      <feComposite operator="in" in2="SourceGraphic"/>
-    </filter>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#e5ff61" />
+      <stop offset="100%" stop-color="#b9e02a" />
+    </linearGradient>
   </defs>
   <rect width="512" height="512" rx="112" fill="url(#bg)" />
-  <rect width="512" height="512" rx="112" filter="url(#grain)" opacity="0.45" />
+  <rect x="6" y="6" width="500" height="500" rx="106" fill="none" stroke="rgba(0,0,0,0.06)" stroke-width="2" />
   <text
-    x="256" y="358"
+    x="256" y="356"
     text-anchor="middle"
-    font-family="'Instrument Serif', 'Iowan Old Style', Georgia, serif"
-    font-size="380"
-    font-style="italic"
-    fill="#1a0c08"
-    opacity="0.95"
+    font-family="'DM Sans', system-ui, sans-serif"
+    font-weight="800"
+    font-size="360"
+    letter-spacing="-12"
+    fill="#0a0a0a"
   >J</text>
 </svg>`;
 
-// Maskable version: full-bleed background, J safely inside the safe-area circle (≈ 40% radius)
+// Maskable: full-bleed, J safely inside the safe-area circle (~40% radius)
 const MASKABLE_SVG = (size) => `
 <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 512 512">
   <defs>
-    <radialGradient id="bg2" cx="0.30" cy="0.22" r="1.05">
-      <stop offset="0%" stop-color="#ffb072" />
-      <stop offset="55%" stop-color="#d2602a" />
-      <stop offset="100%" stop-color="#3c1410" />
-    </radialGradient>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#e5ff61" />
+      <stop offset="100%" stop-color="#b9e02a" />
+    </linearGradient>
   </defs>
   <rect width="512" height="512" fill="url(#bg2)" />
   <text
-    x="256" y="330"
+    x="256" y="332"
     text-anchor="middle"
-    font-family="'Instrument Serif', 'Iowan Old Style', Georgia, serif"
-    font-size="260"
-    font-style="italic"
-    fill="#1a0c08"
-    opacity="0.95"
+    font-family="'DM Sans', system-ui, sans-serif"
+    font-weight="800"
+    font-size="240"
+    letter-spacing="-8"
+    fill="#0a0a0a"
   >J</text>
 </svg>`;
 
 const FAVICON_SVG = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <radialGradient id="bg" cx="0.30" cy="0.22" r="0.95">
-      <stop offset="0%" stop-color="#ffb072" />
-      <stop offset="55%" stop-color="#d2602a" />
-      <stop offset="100%" stop-color="#3c1410" />
-    </radialGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#e5ff61" />
+      <stop offset="100%" stop-color="#b9e02a" />
+    </linearGradient>
   </defs>
   <rect width="64" height="64" rx="14" fill="url(#bg)" />
   <text
     x="32" y="46"
     text-anchor="middle"
-    font-family="'Instrument Serif', 'Iowan Old Style', Georgia, serif"
-    font-size="48"
-    font-style="italic"
-    fill="#1a0c08"
+    font-family="'DM Sans', system-ui, sans-serif"
+    font-weight="800"
+    font-size="46"
+    letter-spacing="-1.5"
+    fill="#0a0a0a"
   >J</text>
 </svg>`;
 
@@ -99,11 +87,7 @@ await rasterize(
   resolve(PUBLIC_DIR, "icon-512-maskable.png"),
   512,
 );
-await rasterize(
-  ICON_SVG(180),
-  resolve(PUBLIC_DIR, "apple-touch-icon.png"),
-  180,
-);
+await rasterize(ICON_SVG(180), resolve(PUBLIC_DIR, "apple-touch-icon.png"), 180);
 
 await writeFile(resolve(PUBLIC_DIR, "favicon.svg"), FAVICON_SVG.trim());
 console.log("wrote favicon.svg");

@@ -9,7 +9,7 @@ import { useCurrentUser, useDishes } from "~/data/hooks";
 import { deleteDish, saveDish, savePhoto } from "~/data/db";
 import { formatDateLong } from "~/utils/format";
 import { getDb } from "~/data/db";
-import type { Visit } from "~/data/types";
+import { USERS, type Visit } from "~/data/types";
 
 export function AddDishPage() {
   const { id: restaurantId, visitId } = useParams<{
@@ -23,7 +23,9 @@ export function AddDishPage() {
 
   useEffect(() => {
     if (!visitId) return;
-    void getDb().then((db) => db.get("visits", visitId).then((v) => setVisit(v ?? null)));
+    void getDb().then((db) =>
+      db.get("visits", visitId).then((v) => setVisit(v ?? null)),
+    );
   }, [visitId]);
 
   const [name, setName] = useState("");
@@ -72,24 +74,21 @@ export function AddDishPage() {
             type="submit"
             form="dish-form"
             disabled={!canSave || saving}
-            className="pressable relative flex items-center gap-1.5 rounded-full bg-flame-500/20 px-3 py-1.5 text-sm font-semibold text-flame-100 ring-1 ring-inset ring-flame-400/30 disabled:opacity-40"
+            className="pressable relative flex items-center gap-1.5 rounded-full bg-tennis-300 px-3 py-1.5 text-sm font-bold text-ink ring-1 ring-inset ring-tennis-500/30 disabled:opacity-40"
           >
             <CheckIcon className="size-4 stroke-current [stroke-width:2.5]" />
             Add
-            <span
-              className="pointer-events-none absolute inset-0 -m-2"
-              aria-hidden="true"
-            />
+            <span className="pointer-events-none absolute inset-0 -m-2" aria-hidden="true" />
           </button>
         }
       />
 
       <div className="px-4">
         {visit ? (
-          <div className="rounded-2xl bg-bg-card p-3 ring-1 ring-inset ring-white/5">
+          <div className="rounded-2xl bg-surface p-3 ring-1 ring-inset ring-line">
             <div className="flex items-center gap-2">
               <UserChip id={visit.userId} size="sm" />
-              <span className="text-sm text-ink-muted">
+              <span className="text-sm font-bold text-ink-muted">
                 {formatDateLong(visit.date)}
               </span>
             </div>
@@ -107,7 +106,7 @@ export function AddDishPage() {
           <div className="mt-5">
             <label
               htmlFor="dish-name"
-              className="text-[11px] tracking-[0.18em] text-ink-dim uppercase"
+              className="text-[11px] font-bold tracking-[0.18em] text-ink-dim uppercase"
             >
               Dish name
             </label>
@@ -119,17 +118,22 @@ export function AddDishPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoFocus
-              className="mt-1.5 w-full rounded-xl bg-bg-card px-3.5 py-3 text-base text-ink placeholder:text-ink-faint ring-1 ring-inset ring-white/5 focus:outline-none focus-visible:ring-flame-400/40"
+              className="mt-1.5 w-full rounded-2xl bg-surface px-3.5 py-3 text-base text-ink placeholder:text-ink-faint ring-1 ring-inset ring-line focus:outline-none focus-visible:ring-tennis-500/40"
             />
           </div>
 
           <div className="mt-5">
-            <p className="text-[11px] tracking-[0.18em] text-ink-dim uppercase">
+            <p className="text-[11px] font-bold tracking-[0.18em] text-ink-dim uppercase">
               Rating
             </p>
-            <div className="mt-2 flex items-center justify-between gap-3">
-              <StarInput value={rating} onChange={setRating} size="lg" />
-              <span className="display text-3xl tabular-nums text-ink">
+            <div className="mt-2 flex items-center justify-between gap-3 rounded-2xl bg-surface p-3 ring-1 ring-inset ring-line">
+              <StarInput
+                value={rating}
+                onChange={setRating}
+                size="lg"
+                color={USERS[user].accent}
+              />
+              <span className="display-tight text-3xl tabular-nums text-ink">
                 {rating > 0 ? rating.toFixed(1) : "—"}
               </span>
             </div>
@@ -138,7 +142,7 @@ export function AddDishPage() {
           <div className="mt-5">
             <label
               htmlFor="dish-notes"
-              className="text-[11px] tracking-[0.18em] text-ink-dim uppercase"
+              className="text-[11px] font-bold tracking-[0.18em] text-ink-dim uppercase"
             >
               Notes
             </label>
@@ -149,49 +153,47 @@ export function AddDishPage() {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
-              className="mt-1.5 w-full resize-none rounded-xl bg-bg-card px-3.5 py-3 text-base text-ink placeholder:text-ink-faint ring-1 ring-inset ring-white/5 focus:outline-none focus-visible:ring-flame-400/40"
+              className="mt-1.5 w-full resize-none rounded-2xl bg-surface px-3.5 py-3 text-base text-ink placeholder:text-ink-faint ring-1 ring-inset ring-line focus:outline-none focus-visible:ring-tennis-500/40"
             />
           </div>
 
           <button
             type="submit"
             disabled={!canSave || saving}
-            className="pressable mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-base font-semibold text-bg shadow-[0_22px_50px_-12px_oklch(0.65_0.21_46_/_0.6)] disabled:opacity-40"
-            style={{
-              background:
-                "radial-gradient(120% 120% at 30% 25%, oklch(0.82 0.18 60) 0%, oklch(0.62 0.21 40) 80%)",
-            }}
+            className="pressable mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-tennis-300 py-3.5 text-base font-bold text-ink ring-1 ring-inset ring-tennis-500/30 shadow-[0_22px_50px_-12px_oklch(0.7_0.2_120_/_0.4)] disabled:opacity-40"
           >
-            <CheckIcon className="size-5 stroke-bg [stroke-width:2.5]" />
+            <CheckIcon className="size-5 stroke-ink [stroke-width:2.5]" />
             {saving ? "Adding…" : "Add dish"}
           </button>
         </form>
 
         {existingDishes.length > 0 ? (
           <section className="mt-8">
-            <p className="text-[11px] tracking-[0.18em] text-ink-dim uppercase">
+            <p className="text-[11px] font-bold tracking-[0.18em] text-ink-dim uppercase">
               Dishes on this visit
             </p>
             <div className="mt-2 flex flex-col gap-2">
               {existingDishes.map((d) => (
                 <div
                   key={d.id}
-                  className="flex items-center gap-3 rounded-2xl bg-bg-card p-3 ring-1 ring-inset ring-white/5"
+                  className="flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-inset ring-line"
                 >
                   <UserChip id={d.userId} size="sm" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-ink">
-                      {d.name}
-                    </p>
-                    <Stars value={d.rating} size="xs" />
+                    <p className="truncate text-sm font-bold text-ink">{d.name}</p>
+                    <Stars
+                      value={d.rating}
+                      size="xs"
+                      color={USERS[d.userId].accent}
+                    />
                   </div>
-                  <span className="shrink-0 text-xs tabular-nums text-ink-muted">
+                  <span className="shrink-0 text-xs font-bold tabular-nums text-ink-muted">
                     {d.rating.toFixed(1)}
                   </span>
                   <button
                     type="button"
                     onClick={() => deleteDish(d.id)}
-                    className="text-xs text-ink-faint hover:text-ink"
+                    className="text-xs font-bold text-ink-faint hover:text-ink"
                     aria-label={`Remove ${d.name}`}
                   >
                     Remove
@@ -205,7 +207,7 @@ export function AddDishPage() {
         <button
           type="button"
           onClick={() => navigate(`/r/${restaurantId}`)}
-          className="mt-6 w-full rounded-xl bg-bg-card py-3 text-sm font-medium text-ink-muted ring-1 ring-inset ring-white/5"
+          className="mt-6 w-full rounded-2xl bg-surface py-3 text-sm font-bold text-ink-muted ring-1 ring-inset ring-line"
         >
           Done
         </button>

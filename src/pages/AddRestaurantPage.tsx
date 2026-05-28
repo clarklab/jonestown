@@ -41,14 +41,11 @@ export function AddRestaurantPage() {
             type="submit"
             form="restaurant-form"
             disabled={!canSave || saving}
-            className="pressable relative flex items-center gap-1.5 rounded-full bg-flame-500/20 px-3 py-1.5 text-sm font-semibold text-flame-100 ring-1 ring-inset ring-flame-400/30 disabled:opacity-40"
+            className="pressable relative flex items-center gap-1.5 rounded-full bg-tennis-300 px-3 py-1.5 text-sm font-bold text-ink ring-1 ring-inset ring-tennis-500/30 disabled:opacity-40"
           >
             <CheckIcon className="size-4 stroke-current [stroke-width:2.5]" />
             Save
-            <span
-              className="pointer-events-none absolute inset-0 -m-2"
-              aria-hidden="true"
-            />
+            <span className="pointer-events-none absolute inset-0 -m-2" aria-hidden="true" />
           </button>
         }
       />
@@ -65,7 +62,7 @@ export function AddRestaurantPage() {
             onChange={(e) => setName(e.target.value)}
             placeholder="Burnt Ends Smokehouse"
             autoFocus
-            className="w-full rounded-xl bg-bg-card px-3.5 py-3 text-base text-ink placeholder:text-ink-faint ring-1 ring-inset ring-white/5 focus:outline-none focus-visible:ring-flame-400/40"
+            className="w-full rounded-2xl bg-surface px-3.5 py-3 text-base text-ink placeholder:text-ink-faint ring-1 ring-inset ring-line focus:outline-none focus-visible:ring-tennis-500/40"
           />
         </Field>
         <Field label="Cuisine">
@@ -75,7 +72,7 @@ export function AddRestaurantPage() {
             value={cuisine}
             onChange={(e) => setCuisine(e.target.value)}
             placeholder="BBQ · Tex-Mex · Pizza"
-            className="w-full rounded-xl bg-bg-card px-3.5 py-3 text-base text-ink placeholder:text-ink-faint ring-1 ring-inset ring-white/5 focus:outline-none focus-visible:ring-flame-400/40"
+            className="w-full rounded-2xl bg-surface px-3.5 py-3 text-base text-ink placeholder:text-ink-faint ring-1 ring-inset ring-line focus:outline-none focus-visible:ring-tennis-500/40"
           />
         </Field>
         <Field label="Area">
@@ -85,7 +82,7 @@ export function AddRestaurantPage() {
             value={area}
             onChange={(e) => setArea(e.target.value)}
             placeholder="Jonestown · Lago Vista · Lake Travis"
-            className="w-full rounded-xl bg-bg-card px-3.5 py-3 text-base text-ink placeholder:text-ink-faint ring-1 ring-inset ring-white/5 focus:outline-none focus-visible:ring-flame-400/40"
+            className="w-full rounded-2xl bg-surface px-3.5 py-3 text-base text-ink placeholder:text-ink-faint ring-1 ring-inset ring-line focus:outline-none focus-visible:ring-tennis-500/40"
           />
         </Field>
         <Field label="Address">
@@ -95,7 +92,7 @@ export function AddRestaurantPage() {
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             placeholder="Street, city, ZIP"
-            className="w-full rounded-xl bg-bg-card px-3.5 py-3 text-base text-ink placeholder:text-ink-faint ring-1 ring-inset ring-white/5 focus:outline-none focus-visible:ring-flame-400/40"
+            className="w-full rounded-2xl bg-surface px-3.5 py-3 text-base text-ink placeholder:text-ink-faint ring-1 ring-inset ring-line focus:outline-none focus-visible:ring-tennis-500/40"
           />
         </Field>
         <Field label="Notes">
@@ -105,20 +102,16 @@ export function AddRestaurantPage() {
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Patio · drive-thru only · open late…"
             rows={3}
-            className="w-full resize-none rounded-xl bg-bg-card px-3.5 py-3 text-base text-ink placeholder:text-ink-faint ring-1 ring-inset ring-white/5 focus:outline-none focus-visible:ring-flame-400/40"
+            className="w-full resize-none rounded-2xl bg-surface px-3.5 py-3 text-base text-ink placeholder:text-ink-faint ring-1 ring-inset ring-line focus:outline-none focus-visible:ring-tennis-500/40"
           />
         </Field>
 
         <button
           type="submit"
           disabled={!canSave || saving}
-          className="pressable mt-2 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-base font-semibold text-bg shadow-[0_22px_50px_-12px_oklch(0.65_0.21_46_/_0.6)] disabled:opacity-40"
-          style={{
-            background:
-              "radial-gradient(120% 120% at 30% 25%, oklch(0.82 0.18 60) 0%, oklch(0.62 0.21 40) 80%)",
-          }}
+          className="pressable mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-tennis-300 py-3.5 text-base font-bold text-ink ring-1 ring-inset ring-tennis-500/30 shadow-[0_22px_50px_-12px_oklch(0.7_0.2_120_/_0.4)] disabled:opacity-40"
         >
-          <CheckIcon className="size-5 stroke-bg [stroke-width:2.5]" />
+          <CheckIcon className="size-5 stroke-ink [stroke-width:2.5]" />
           {saving ? "Saving…" : "Save restaurant"}
         </button>
       </form>
@@ -137,9 +130,9 @@ function Field({
 }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-[11px] tracking-[0.18em] text-ink-dim uppercase">
+      <span className="text-[11px] font-bold tracking-[0.18em] text-ink-dim uppercase">
         {label}
-        {required ? <span className="ml-1 text-flame-300">*</span> : null}
+        {required ? <span className="ml-1 text-angie-500">*</span> : null}
       </span>
       {children}
     </label>

@@ -12,9 +12,9 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
+    "@netlify/blobs": "^10.7.8",
     "framer-motion": "^11.18.2",
     "idb": "^8.0.3",
-    "ogl": "^1.0.11",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.9.1"

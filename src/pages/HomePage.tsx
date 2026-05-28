@@ -3,29 +3,40 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
   MagnifyingGlassIcon,
+  MapIcon,
   PlusIcon,
-  SparklesIcon,
+  Squares2X2Icon,
 } from "@heroicons/react/24/outline";
 import { Header } from "~/components/Header";
-import { HeroShader } from "~/components/HeroShader";
 import { RestaurantCard } from "~/components/RestaurantCard";
+import { TownMap } from "~/components/TownMap";
 import { useAggregates } from "~/data/hooks";
-import type { RestaurantAggregate } from "~/data/types";
+import type { RestaurantAggregate, VerdictStatus } from "~/data/types";
 
-type SortKey = "all" | "unrated" | "top" | "recent" | "both";
+type SortKey =
+  | "all"
+  | "locked"
+  | "solo"
+  | "unanimous"
+  | "divided"
+  | "top"
+  | "recent";
 
 const SORT_LABELS: Record<SortKey, string> = {
   all: "All",
-  unrated: "Unrated",
+  locked: "Locked",
+  solo: "Half-lit",
+  unanimous: "Unanimous",
+  divided: "Divided",
   top: "Top",
   recent: "Recent",
-  both: "Both ★",
 };
 
 export function HomePage() {
   const aggs = useAggregates();
   const [sort, setSort] = useState<SortKey>("all");
   const [query, setQuery] = useState("");
+  const [view, setView] = useState<"map" | "list">("map");
 
   const filtered = useMemo(() => {
     let list = [...aggs.list];
@@ -42,58 +53,67 @@ export function HomePage() {
     return list;
   }, [aggs.list, sort, query]);
 
-  const pctRated =
-    aggs.totalCount === 0
-      ? 0
-      : Math.round((aggs.ratedCount / aggs.totalCount) * 100);
-
   return (
     <div className="relative">
       <Header transparent />
 
-      <section className="relative isolate -mt-16 overflow-hidden pt-20 pb-8">
-        <HeroShader
-          intensity={0.95}
-          className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[460px]"
-        />
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[460px]"
-          style={{
-            background:
-              "linear-gradient(to bottom, oklch(0 0 0 / 0.32) 0%, transparent 18%, transparent 60%, var(--color-bg) 100%)",
-          }}
-        />
-        <div className="px-5">
-          <p className="text-[11px] tracking-[0.22em] text-flame-200/80 uppercase">
-            Jonestown, TX · 78645
-          </p>
-          <h1
-            className="display mt-2 max-w-[14ch] text-[44px] leading-[1.02] tracking-tight text-balance text-ink"
-            style={{ textShadow: "0 2px 24px oklch(0 0 0 / 0.45)" }}
-          >
-            Two forks,
-            <br />
-            <span className="display-italic text-flame-200">one town.</span>
-          </h1>
-          <p
-            className="mt-3 max-w-[34ch] text-pretty text-sm text-ink-muted"
-            style={{ textShadow: "0 1px 16px oklch(0 0 0 / 0.5)" }}
-          >
-            Clark & Angie's private supper club. Rate every restaurant, log
-            every dish, agree to disagree.
-          </p>
+      {/* Map hero */}
+      <section className="relative isolate -mt-16 px-4 pt-20 pb-4">
+        <div className="relative overflow-hidden rounded-[28px] bg-surface ring-1 ring-line shadow-[0_30px_80px_-30px_oklch(0_0_0_/_0.2)]">
+          <TownMap aggregates={aggs.list} className="h-[440px] w-full" />
 
-          <Progress
-            pct={pctRated}
-            ratedCount={aggs.ratedCount}
-            bothRatedCount={aggs.bothRatedCount}
-            totalCount={aggs.totalCount}
-          />
+          {/* Floating progress meter */}
+          <div className="absolute top-4 left-4 right-4 flex items-center gap-2">
+            <ProgressChip
+              unlocked={aggs.bothRatedCount}
+              total={aggs.totalCount}
+            />
+            <span className="ml-auto rounded-full bg-paper/85 px-2.5 py-1 text-[10px] font-bold tracking-[0.16em] text-ink-muted uppercase backdrop-blur-md ring-1 ring-inset ring-line">
+              78645
+            </span>
+          </div>
+
+          {/* Legend */}
+          <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1.5">
+            <LegendChip color="oklch(0 0 0 / 0.55)" label="Locked" />
+            <LegendChip color="oklch(0.95 0.06 60)" label="1 fork" border="oklch(0.6 0.18 100)" />
+            <LegendChip
+              color="var(--color-tennis-300)"
+              label="Both ★"
+              border="oklch(0.7 0.21 122)"
+            />
+            <LegendChip
+              color="oklch(0.93 0.14 25)"
+              label="Divided"
+              border="oklch(0.55 0.21 25)"
+            />
+          </div>
         </div>
+
+        {/* Big tagline */}
+        <div className="mt-5">
+          <p className="text-[11px] font-bold tracking-[0.22em] text-ink-dim uppercase">
+            Jonestown, TX
+          </p>
+          <h1 className="display-tight mt-1 text-[40px] leading-[0.95] tracking-tight text-balance text-ink">
+            Eat the whole map.
+          </h1>
+          <p className="mt-2 max-w-[40ch] text-pretty text-sm text-ink-muted">
+            Every restaurant in town is a fog tile. Both of you have to rate it
+            before it unlocks. Find them. Argue about them.
+          </p>
+        </div>
+
+        <BigProgressMeter
+          unlocked={aggs.bothRatedCount}
+          solo={aggs.list.filter((a) => a.verdict.status === "solo").length}
+          total={aggs.totalCount}
+        />
       </section>
 
+      {/* Search + filter */}
       <section className="px-4">
-        <div className="flex items-center gap-2 rounded-2xl bg-bg-card px-3 py-2.5 ring-1 ring-inset ring-white/5">
+        <div className="flex items-center gap-2 rounded-2xl bg-surface px-3 py-2.5 ring-1 ring-inset ring-line">
           <MagnifyingGlassIcon className="size-5 shrink-0 stroke-ink-dim" />
           <input
             type="search"
@@ -104,18 +124,19 @@ export function HomePage() {
             aria-label="Search"
             className="w-full bg-transparent text-base text-ink placeholder:text-ink-faint focus:outline-none"
           />
+          <ViewToggle view={view} onChange={setView} />
         </div>
 
-        <div className="no-scrollbar -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 pb-1">
+        <div className="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1">
           {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
             <button
               key={k}
               type="button"
               onClick={() => setSort(k)}
-              className={`pressable shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium ring-1 ring-inset transition-colors ${
+              className={`pressable shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold ring-1 ring-inset transition-colors ${
                 sort === k
-                  ? "bg-flame-500/15 text-flame-200 ring-flame-400/30"
-                  : "bg-bg-card text-ink-muted ring-white/5"
+                  ? "bg-tennis-300 text-ink ring-tennis-500/40"
+                  : "bg-surface text-ink-muted ring-line"
               }`}
             >
               {SORT_LABELS[k]}
@@ -124,6 +145,7 @@ export function HomePage() {
         </div>
       </section>
 
+      {/* List */}
       <section className="mt-4 flex flex-col gap-2.5 px-4">
         {filtered.length === 0 ? (
           <EmptyState query={query} />
@@ -134,20 +156,18 @@ export function HomePage() {
         )}
       </section>
 
-      <section className="mx-4 mt-5">
+      <section className="mx-4 mt-5 mb-2">
         <Link
           to="/add/restaurant"
-          className="pressable group flex items-center gap-3 rounded-3xl bg-bg-card p-4 ring-1 ring-inset ring-white/5"
+          className="pressable group flex items-center gap-3 rounded-3xl bg-surface p-4 ring-1 ring-inset ring-line"
         >
-          <div className="flex size-12 items-center justify-center rounded-2xl bg-flame-500/15 ring-1 ring-inset ring-flame-400/20">
-            <PlusIcon className="size-6 stroke-flame-200 [stroke-width:2]" />
+          <div className="flex size-12 items-center justify-center rounded-2xl bg-tennis-200 ring-1 ring-inset ring-tennis-500/30">
+            <PlusIcon className="size-6 stroke-ink [stroke-width:2.2]" />
           </div>
           <div className="flex-1">
-            <p className="text-base font-semibold text-ink">
-              Add a restaurant
-            </p>
+            <p className="text-base font-bold text-ink">Add a restaurant</p>
             <p className="text-xs text-ink-dim">
-              Something new opens? Drop it in.
+              Something new opens? Drop it on the map.
             </p>
           </div>
         </Link>
@@ -158,8 +178,17 @@ export function HomePage() {
 
 function applySort(list: RestaurantAggregate[], sort: SortKey) {
   switch (sort) {
-    case "unrated":
-      return list.filter((a) => a.combinedRating === undefined);
+    case "locked":
+      return list.filter((a) => a.verdict.status === "locked");
+    case "solo":
+      return list.filter((a) => a.verdict.status === "solo");
+    case "unanimous":
+      return list.filter((a) => a.verdict.status === "unanimous");
+    case "divided":
+      return list.filter(
+        (a) =>
+          a.verdict.status === "divided" || a.verdict.status === "split",
+      );
     case "top":
       return [...list].sort(
         (a, b) =>
@@ -170,62 +199,163 @@ function applySort(list: RestaurantAggregate[], sort: SortKey) {
       return [...list].sort(
         (a, b) => (b.lastVisit ?? 0) - (a.lastVisit ?? 0),
       );
-    case "both":
-      return list.filter((a) => a.bothRated);
     case "all":
     default:
-      return list;
+      return [...list].sort((a, b) => {
+        const order: Record<VerdictStatus, number> = {
+          unanimous: 0,
+          split: 1,
+          divided: 2,
+          solo: 3,
+          locked: 4,
+        };
+        return (
+          order[a.verdict.status] - order[b.verdict.status] ||
+          a.restaurant.name.localeCompare(b.restaurant.name)
+        );
+      });
   }
 }
 
-function Progress({
-  pct,
-  ratedCount,
-  bothRatedCount,
-  totalCount,
+function ProgressChip({
+  unlocked,
+  total,
 }: {
-  pct: number;
-  ratedCount: number;
-  bothRatedCount: number;
-  totalCount: number;
+  unlocked: number;
+  total: number;
 }) {
   return (
-    <div className="mt-5 overflow-hidden rounded-2xl bg-bg-card/80 backdrop-blur-md p-3.5 ring-1 ring-inset ring-white/10">
+    <div className="flex items-center gap-2 rounded-full bg-paper/85 py-1 pr-3 pl-1 backdrop-blur-md ring-1 ring-inset ring-line">
+      <span className="flex size-7 items-center justify-center rounded-full bg-tennis-300 text-[11px] font-bold text-ink">
+        {unlocked}
+      </span>
+      <span className="text-[11px] font-bold tracking-wide text-ink-muted">
+        of {total} unlocked
+      </span>
+    </div>
+  );
+}
+
+function LegendChip({
+  color,
+  label,
+  border,
+}: {
+  color: string;
+  label: string;
+  border?: string;
+}) {
+  return (
+    <span className="flex items-center gap-1 rounded-full bg-paper/85 px-2 py-0.5 text-[10px] font-bold tracking-wide text-ink-muted backdrop-blur-md ring-1 ring-inset ring-line">
+      <span
+        className="size-2.5 rounded-full"
+        style={{
+          background: color,
+          boxShadow: border ? `inset 0 0 0 1.5px ${border}` : undefined,
+        }}
+      />
+      {label}
+    </span>
+  );
+}
+
+function ViewToggle({
+  view,
+  onChange,
+}: {
+  view: "map" | "list";
+  onChange: (v: "map" | "list") => void;
+}) {
+  return (
+    <div className="flex rounded-full bg-surface-2 p-0.5 ring-1 ring-inset ring-line">
+      {(["map", "list"] as const).map((v) => {
+        const active = view === v;
+        return (
+          <button
+            key={v}
+            type="button"
+            onClick={() => onChange(v)}
+            aria-label={`${v} view`}
+            className={`pressable relative flex size-7 items-center justify-center rounded-full ${active ? "bg-paper shadow-sm" : ""}`}
+          >
+            {v === "map" ? (
+              <MapIcon className="size-4 stroke-current" />
+            ) : (
+              <Squares2X2Icon className="size-4 stroke-current" />
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function BigProgressMeter({
+  unlocked,
+  solo,
+  total,
+}: {
+  unlocked: number;
+  solo: number;
+  total: number;
+}) {
+  const pctUnlocked = total ? (unlocked / total) * 100 : 0;
+  const pctSolo = total ? (solo / total) * 100 : 0;
+  const remaining = total - unlocked - solo;
+
+  return (
+    <div className="mt-5 rounded-3xl bg-surface p-4 ring-1 ring-inset ring-line">
       <div className="flex items-baseline justify-between">
-        <div className="flex items-center gap-2">
-          <SparklesIcon className="size-4 shrink-0 stroke-flame-300" />
-          <p className="text-[11px] tracking-[0.18em] text-ink-dim uppercase">
+        <div>
+          <p className="text-[10px] font-bold tracking-[0.22em] text-ink-dim uppercase">
             Town progress
           </p>
+          <p className="display-tight mt-1 text-3xl tabular-nums text-ink">
+            {unlocked}
+            <span className="text-ink-faint">/{total}</span>
+          </p>
         </div>
-        <p className="text-sm font-semibold tabular-nums text-ink">
-          {ratedCount}
-          <span className="text-ink-faint">/{totalCount}</span>
-        </p>
+        <div className="text-right">
+          <p className="text-[10px] font-bold tracking-[0.22em] text-ink-dim uppercase">
+            Still hidden
+          </p>
+          <p className="display-tight mt-1 text-3xl tabular-nums text-ink-faint">
+            {remaining}
+          </p>
+        </div>
       </div>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/5">
+      <div className="relative mt-3 h-3 overflow-hidden rounded-full bg-surface-2 ring-1 ring-inset ring-line">
         <motion.div
           initial={{ width: 0 }}
-          animate={{ width: `${pct}%` }}
+          animate={{ width: `${pctUnlocked}%` }}
           transition={{ type: "spring", stiffness: 80, damping: 18, delay: 0.1 }}
-          className="h-full rounded-full"
-          style={{
-            background:
-              "linear-gradient(90deg, oklch(0.55 0.2 38), oklch(0.82 0.18 60), oklch(0.88 0.14 86))",
-          }}
+          className="absolute inset-y-0 left-0 rounded-full bg-tennis-300"
+        />
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${pctSolo}%` }}
+          transition={{ type: "spring", stiffness: 80, damping: 18, delay: 0.18 }}
+          className="absolute inset-y-0 rounded-full bg-tennis-200"
+          style={{ left: `${pctUnlocked}%` }}
         />
       </div>
-      <p className="mt-2.5 text-xs text-ink-dim">
-        <span className="font-semibold text-ink-muted">{bothRatedCount}</span>{" "}
-        rated by both · keep going.
-      </p>
+      <div className="mt-2 flex items-center gap-3 text-[11px] font-medium text-ink-dim">
+        <span className="flex items-center gap-1">
+          <span className="size-2 rounded-full bg-tennis-300" />
+          {unlocked} unanimous
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="size-2 rounded-full bg-tennis-200" />
+          {solo} half-lit
+        </span>
+      </div>
     </div>
   );
 }
 
 function EmptyState({ query }: { query: string }) {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-3xl bg-bg-card p-8 text-center ring-1 ring-inset ring-white/5">
+    <div className="flex flex-col items-center gap-2 rounded-3xl bg-surface p-8 text-center ring-1 ring-inset ring-line">
       <p className="display text-xl text-ink">
         {query ? "No matches" : "Nothing yet"}
       </p>

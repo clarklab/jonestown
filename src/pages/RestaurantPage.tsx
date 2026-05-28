@@ -2,21 +2,24 @@ import { motion } from "framer-motion";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ChevronRightIcon,
+  LockClosedIcon,
   MapPinIcon,
   PlusIcon,
 } from "@heroicons/react/24/outline";
 import { Header } from "~/components/Header";
-import { Stars } from "~/components/Stars";
+import { Stars, UserStars } from "~/components/Stars";
 import { UserChip } from "~/components/UserChip";
+import { DuelScore, GapBar, VerdictBadge } from "~/components/Duel";
 import {
   useAggregate,
+  useCurrentUser,
   useDishes,
   usePhotoUrl,
   useRestaurant,
   useVisits,
 } from "~/data/hooks";
 import { formatDate, formatRelativeDate } from "~/utils/format";
-import { USERS, type Dish, type Visit } from "~/data/types";
+import { USERS, type Dish, type UserId, type Visit } from "~/data/types";
 import { PlaceholderArt } from "~/components/RestaurantCard";
 
 export function RestaurantPage() {
@@ -26,8 +29,9 @@ export function RestaurantPage() {
   const visits = useVisits(id);
   const dishes = useDishes({ restaurantId: id });
   const navigate = useNavigate();
+  const [currentUser] = useCurrentUser();
 
-  if (!restaurant) {
+  if (!restaurant || !agg) {
     return (
       <div className="px-4 py-16 text-center">
         <Header back />
@@ -36,73 +40,131 @@ export function RestaurantPage() {
     );
   }
 
+  const verdict = agg.verdict;
   const heroPhoto = dishes.find((d) => d.photoId)?.photoId;
+  const missingUser: UserId | null =
+    verdict.status === "solo"
+      ? verdict.clark === undefined
+        ? "clark"
+        : "angie"
+      : null;
 
   return (
     <div className="relative pb-12">
       <Header back transparent />
 
-      <section className="relative -mt-16 h-72 overflow-hidden">
+      {/* Hero photo strip */}
+      <section className="relative isolate -mt-16 h-64 overflow-hidden">
         <HeroPhotoOrArt photoId={heroPhoto} seed={restaurant.id} name={restaurant.name} />
         <div
-          className="absolute inset-x-0 bottom-0 h-2/3"
+          className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to bottom, transparent 0%, oklch(0.16 0.014 60 / 0.65) 60%, var(--color-bg) 100%)",
+              "linear-gradient(to bottom, oklch(0 0 0 / 0.0) 30%, oklch(0.99 0.005 100 / 0.5) 75%, var(--color-paper) 100%)",
           }}
         />
       </section>
 
-      <section className="relative -mt-20 px-5">
-        <h1
-          className="display text-[36px] leading-[1.04] tracking-tight text-balance text-ink"
-          style={{ textShadow: "0 2px 16px oklch(0 0 0 / 0.45)" }}
-        >
-          {restaurant.name}
-        </h1>
-        {restaurant.cuisine || restaurant.area ? (
-          <p className="mt-1 text-sm text-ink-muted">
-            {[restaurant.cuisine, restaurant.area].filter(Boolean).join(" · ")}
-          </p>
-        ) : null}
+      <section className="relative -mt-16 px-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="display-tight text-[34px] leading-[1.04] tracking-tight text-balance text-ink">
+              {restaurant.name}
+            </h1>
+            {restaurant.cuisine || restaurant.area ? (
+              <p className="mt-0.5 text-sm font-medium text-ink-muted">
+                {[restaurant.cuisine, restaurant.area]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            ) : null}
+          </div>
+          <VerdictBadge verdict={verdict} size="md" />
+        </div>
+
         {restaurant.address ? (
-          <p className="mt-2 flex items-center gap-1.5 text-xs text-ink-dim">
+          <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-ink-dim">
             <MapPinIcon className="size-3.5 shrink-0 stroke-current" />
             {restaurant.address}
           </p>
         ) : null}
 
-        {agg ? <ScoreBlock agg={agg} /> : null}
+        {/* The hero duel */}
+        <div className="mt-5 rounded-3xl bg-surface p-5 ring-1 ring-inset ring-line">
+          <DuelScore verdict={verdict} size="lg" />
+          {verdict.clark !== undefined && verdict.angie !== undefined ? (
+            <div className="mt-5">
+              <GapBar verdict={verdict} />
+              <p className="mt-1 text-center text-[11px] font-bold tracking-[0.18em] text-ink-dim uppercase">
+                {verdict.status === "unanimous"
+                  ? "agreed within ½ star"
+                  : verdict.status === "split"
+                    ? `split by ${verdict.gap?.toFixed(1)} stars`
+                    : `divided by ${verdict.gap?.toFixed(1)} stars`}
+              </p>
+            </div>
+          ) : verdict.status === "solo" && missingUser ? (
+            <WaitingOn missing={missingUser} />
+          ) : (
+            <LockedNotice />
+          )}
+        </div>
 
-        <div className="mt-5 flex gap-2">
+        <div className="mt-4">
           <button
             type="button"
             onClick={() => navigate(`/r/${restaurant.id}/visit`)}
-            className="pressable flex flex-1 items-center justify-center gap-2 rounded-2xl py-3 font-semibold text-bg shadow-[0_18px_40px_-12px_oklch(0.65_0.21_46_/_0.6)]"
-            style={{
-              background:
-                "radial-gradient(120% 120% at 30% 25%, oklch(0.82 0.18 60) 0%, oklch(0.62 0.21 40) 80%)",
-            }}
+            className="pressable flex w-full items-center justify-center gap-2 rounded-2xl bg-tennis-300 py-3.5 text-base font-bold text-ink ring-1 ring-inset ring-tennis-500/30 shadow-[0_18px_40px_-12px_oklch(0.7_0.2_120_/_0.45)]"
           >
-            <PlusIcon className="size-5 stroke-bg [stroke-width:2.5]" />
-            Log a visit
+            <PlusIcon className="size-5 stroke-ink [stroke-width:2.5]" />
+            {missingUser === currentUser
+              ? `Be the second fork`
+              : agg.visitCountByUser[currentUser] > 0
+                ? "Log another visit"
+                : "Log your visit"}
           </button>
         </div>
 
         {restaurant.notes ? (
-          <p className="mt-4 rounded-2xl bg-bg-card/60 px-3.5 py-2.5 text-sm text-ink-muted ring-1 ring-inset ring-white/5">
+          <p className="mt-4 rounded-2xl bg-surface-2 px-3.5 py-2.5 text-sm font-medium text-ink-muted ring-1 ring-inset ring-line">
             {restaurant.notes}
           </p>
         ) : null}
       </section>
 
+      {/* Side-by-side per-user takes */}
+      <section className="mt-8 px-4">
+        <div className="px-1">
+          <h2 className="display text-lg text-ink">The takes</h2>
+          <p className="text-xs text-ink-dim">
+            Each side of the booth, summarized.
+          </p>
+        </div>
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <TakeCard
+            user="clark"
+            rating={verdict.clark}
+            visitCount={agg.visitCountByUser.clark}
+            dishes={dishes.filter((d) => d.userId === "clark")}
+            visits={visits.filter((v) => v.userId === "clark")}
+          />
+          <TakeCard
+            user="angie"
+            rating={verdict.angie}
+            visitCount={agg.visitCountByUser.angie}
+            dishes={dishes.filter((d) => d.userId === "angie")}
+            visits={visits.filter((v) => v.userId === "angie")}
+          />
+        </div>
+      </section>
+
       {dishes.length > 0 ? (
         <section className="mt-8 px-5">
-          <h2 className="display text-lg text-ink">Dishes</h2>
+          <h2 className="display text-lg text-ink">Every dish ordered</h2>
           <p className="text-xs text-ink-dim">
-            Every dish, every visit. Long-list the menu.
+            Two-fork menu. Tap into a visit to add more.
           </p>
-          <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="mt-3 grid grid-cols-2 gap-3">
             {dishes.map((d) => (
               <DishTile key={d.id} dish={d} />
             ))}
@@ -111,13 +173,13 @@ export function RestaurantPage() {
       ) : null}
 
       <section className="mt-8 px-5">
-        <h2 className="display text-lg text-ink">Visits</h2>
+        <h2 className="display text-lg text-ink">Visit log</h2>
         <p className="text-xs text-ink-dim">
           {visits.length === 0
             ? "No visits logged yet."
             : `${visits.length} logged visit${visits.length === 1 ? "" : "s"}.`}
         </p>
-        <div className="mt-4 flex flex-col gap-3">
+        <div className="mt-3 flex flex-col gap-2">
           {visits.map((v) => (
             <VisitRow key={v.id} visit={v} />
           ))}
@@ -156,90 +218,108 @@ function HeroPhotoOrArt({
   );
 }
 
-function ScoreBlock({ agg }: { agg: NonNullable<ReturnType<typeof useAggregate>> }) {
+function WaitingOn({ missing }: { missing: UserId }) {
+  const u = USERS[missing];
   return (
-    <div className="mt-4 grid grid-cols-2 gap-3">
-      <ScoreCard
-        label="Clark"
-        accent={USERS.clark.accent}
-        value={agg.ratingByUser.clark}
-        count={agg.visitCountByUser.clark}
-      />
-      <ScoreCard
-        label="Angie"
-        accent={USERS.angie.accent}
-        value={agg.ratingByUser.angie}
-        count={agg.visitCountByUser.angie}
-      />
-      {agg.combinedRating !== undefined ? (
-        <div className="col-span-2 flex items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-flame-500/15 via-flame-500/10 to-flame-300/10 px-4 py-3 ring-1 ring-inset ring-flame-400/20">
-          <div>
-            <p className="text-[11px] tracking-[0.18em] text-flame-200/80 uppercase">
-              Combined
-            </p>
-            <p className="display text-3xl tabular-nums text-ink">
-              {agg.combinedRating.toFixed(1)}
-              <span className="text-base text-ink-faint">/5</span>
-            </p>
-          </div>
-          <Stars value={agg.combinedRating} size="lg" />
-        </div>
-      ) : null}
+    <div className="mt-5 flex items-center justify-center gap-2 rounded-2xl bg-surface-2 px-3 py-2 ring-1 ring-inset ring-line">
+      <span
+        className="flex size-6 items-center justify-center rounded-full text-[11px] font-bold text-white"
+        style={{ background: u.accent }}
+      >
+        {u.initial}
+      </span>
+      <span className="text-xs font-bold text-ink-muted">
+        Waiting on {u.name} to weigh in.
+      </span>
     </div>
   );
 }
 
-function ScoreCard({
-  label,
-  accent,
-  value,
-  count,
-}: {
-  label: string;
-  accent: string;
-  value: number | undefined;
-  count: number;
-}) {
+function LockedNotice() {
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-bg-card px-3.5 py-3 ring-1 ring-inset ring-white/5">
+    <div className="mt-5 flex items-center justify-center gap-2 rounded-2xl bg-surface-2 px-3 py-2 ring-1 ring-inset ring-line">
+      <LockClosedIcon className="size-4 text-ink-faint" />
+      <span className="text-xs font-bold text-ink-muted">
+        Both of you need to rate to unlock this on the map.
+      </span>
+    </div>
+  );
+}
+
+function TakeCard({
+  user,
+  rating,
+  visitCount,
+  dishes,
+  visits,
+}: {
+  user: UserId;
+  rating: number | undefined;
+  visitCount: number;
+  dishes: Dish[];
+  visits: Visit[];
+}) {
+  const u = USERS[user];
+  const latestNote = visits.find((v) => v.notes)?.notes;
+  const topDish = [...dishes].sort((a, b) => b.rating - a.rating)[0];
+  return (
+    <div className="relative overflow-hidden rounded-3xl bg-surface p-4 ring-1 ring-inset ring-line">
       <div
-        className="absolute -top-8 -right-8 size-24 rounded-full opacity-25 blur-2xl"
-        style={{ background: accent }}
+        className="absolute -top-10 -right-10 size-32 rounded-full opacity-25 blur-2xl"
+        style={{ background: u.accent }}
         aria-hidden="true"
       />
-      <p className="text-[11px] tracking-[0.18em] text-ink-dim uppercase">
-        {label}
-      </p>
-      <div className="mt-1.5 flex items-baseline gap-2">
-        <p className="display text-3xl tabular-nums text-ink">
-          {value !== undefined ? value.toFixed(1) : "—"}
-        </p>
-        {value !== undefined ? (
-          <span className="text-xs text-ink-faint">/5</span>
-        ) : null}
-      </div>
-      <div className="mt-1 flex items-center gap-2">
-        <Stars value={value ?? 0} size="xs" />
-        <span className="text-[11px] text-ink-dim">
-          {count === 0
-            ? "no visits"
-            : `${count} visit${count === 1 ? "" : "s"}`}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <UserChip id={user} size="md" />
+          <span className="text-sm font-bold text-ink">{u.name}</span>
+        </div>
+        <span className="text-[10px] font-bold tracking-[0.16em] text-ink-faint uppercase">
+          {visitCount === 0 ? "Not yet" : `${visitCount} visits`}
         </span>
       </div>
+      <div className="mt-3 flex items-baseline gap-2">
+        <p
+          className="display-tight text-4xl tabular-nums"
+          style={{
+            color: rating !== undefined ? "var(--color-ink)" : "var(--color-ink-faint)",
+          }}
+        >
+          {rating !== undefined ? rating.toFixed(1) : "—"}
+        </p>
+        {rating !== undefined ? (
+          <span className="text-sm font-bold text-ink-faint">/5</span>
+        ) : null}
+      </div>
+      <div className="mt-1">
+        <UserStars user={user} value={rating} size="md" />
+      </div>
+      {topDish ? (
+        <p className="mt-3 text-xs font-medium text-ink-muted">
+          <span className="font-bold text-ink">Top dish:</span>{" "}
+          {topDish.name}
+        </p>
+      ) : null}
+      {latestNote ? (
+        <p className="mt-2 line-clamp-3 text-xs text-ink-dim italic">
+          "{latestNote}"
+        </p>
+      ) : null}
     </div>
   );
 }
 
 function DishTile({ dish }: { dish: Dish }) {
   const url = usePhotoUrl(dish.photoId);
+  const u = USERS[dish.userId];
   return (
     <motion.div
       layout
       initial={{ opacity: 0, scale: 0.97 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="overflow-hidden rounded-2xl bg-bg-card ring-1 ring-inset ring-white/5"
+      className="overflow-hidden rounded-2xl bg-surface ring-1 ring-inset ring-line"
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-bg-soft">
+      <div className="relative aspect-[4/3] overflow-hidden bg-surface-2">
         {url ? (
           <img
             src={url}
@@ -252,10 +332,10 @@ function DishTile({ dish }: { dish: Dish }) {
             className="absolute inset-0 flex items-center justify-center"
             style={{
               background:
-                "linear-gradient(140deg, oklch(0.32 0.06 60), oklch(0.22 0.04 50))",
+                "linear-gradient(135deg, var(--color-tennis-100), var(--color-tennis-200))",
             }}
           >
-            <span className="display text-3xl text-ink-faint">
+            <span className="display-tight text-3xl text-ink/35">
               {dish.name.slice(0, 1).toUpperCase()}
             </span>
           </div>
@@ -265,12 +345,12 @@ function DishTile({ dish }: { dish: Dish }) {
         </div>
       </div>
       <div className="p-3">
-        <p className="line-clamp-2 text-sm font-medium text-ink">
+        <p className="line-clamp-2 text-sm font-bold text-ink">
           {dish.name}
         </p>
-        <div className="mt-1.5 flex items-center justify-between gap-2">
-          <Stars value={dish.rating} size="xs" />
-          <span className="text-[11px] font-semibold tabular-nums text-ink-muted">
+        <div className="mt-1 flex items-center justify-between gap-2">
+          <Stars value={dish.rating} size="xs" color={u.accent} />
+          <span className="text-[11px] font-bold tabular-nums text-ink-muted">
             {dish.rating.toFixed(1)}
           </span>
         </div>
@@ -280,32 +360,33 @@ function DishTile({ dish }: { dish: Dish }) {
 }
 
 function VisitRow({ visit }: { visit: Visit }) {
+  const u = USERS[visit.userId];
   return (
     <Link
       to={`/r/${visit.restaurantId}/dish/${visit.id}`}
-      className="pressable flex items-center gap-3 rounded-2xl bg-bg-card p-3 ring-1 ring-inset ring-white/5"
+      className="pressable flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-inset ring-line"
     >
       <UserChip id={visit.userId} size="md" />
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
-          <p className="truncate text-sm font-medium text-ink">
+          <p className="truncate text-sm font-bold text-ink">
             {formatDate(visit.date)}
           </p>
-          <p className="shrink-0 text-[11px] text-ink-dim">
+          <p className="shrink-0 text-[11px] font-medium text-ink-dim">
             {formatRelativeDate(visit.date)}
           </p>
         </div>
         <div className="mt-0.5 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
-            <Stars value={visit.rating ?? 0} size="xs" />
+            <Stars value={visit.rating ?? 0} size="xs" color={u.accent} />
             {visit.rating !== undefined ? (
-              <span className="text-[11px] tabular-nums text-ink-muted">
+              <span className="text-[11px] font-bold tabular-nums text-ink-muted">
                 {visit.rating.toFixed(1)}
               </span>
             ) : null}
           </div>
           {visit.occasion ? (
-            <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] tracking-wide text-ink-dim uppercase">
+            <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-bold tracking-wide text-ink-dim uppercase">
               {visit.occasion}
             </span>
           ) : null}

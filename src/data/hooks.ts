@@ -16,6 +16,7 @@ import type {
   UserId,
   Visit,
 } from "./types";
+import { verdictFromRatings } from "./types";
 
 export function useTables(
   tables: string[],
@@ -193,6 +194,7 @@ export function useAggregates(): {
         combinedRating: combined,
         bothRated: both,
         topDishes,
+        verdict: verdictFromRatings(clarkAvg, angieAvg),
       };
       return agg;
     });

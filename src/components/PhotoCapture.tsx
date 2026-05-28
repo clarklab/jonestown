@@ -14,10 +14,8 @@ export function PhotoCapture({
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
 
-  // generate preview when blob changes
   if (blob && !preview) {
-    const url = URL.createObjectURL(blob);
-    setPreview(url);
+    setPreview(URL.createObjectURL(blob));
   }
   if (!blob && preview) {
     URL.revokeObjectURL(preview);
@@ -32,7 +30,7 @@ export function PhotoCapture({
   if (preview) {
     return (
       <div
-        className={`relative overflow-hidden rounded-2xl bg-bg-card outline-1 -outline-offset-1 outline-white/10 ${className}`}
+        className={`relative overflow-hidden rounded-3xl bg-surface outline-1 -outline-offset-1 outline-black/5 ${className}`}
       >
         <img
           src={preview}
@@ -44,7 +42,7 @@ export function PhotoCapture({
           type="button"
           whileTap={{ scale: 0.9 }}
           onClick={() => onChange(null)}
-          className="pressable absolute top-2 right-2 flex size-9 items-center justify-center rounded-full bg-bg/80 backdrop-blur-md ring-1 ring-white/10"
+          className="pressable absolute top-2 right-2 flex size-9 items-center justify-center rounded-full bg-paper/90 backdrop-blur-md ring-1 ring-inset ring-line"
           aria-label="Remove photo"
         >
           <XMarkIcon className="size-5 stroke-ink" />
@@ -57,14 +55,12 @@ export function PhotoCapture({
     <button
       type="button"
       onClick={() => inputRef.current?.click()}
-      className={`pressable group relative flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 rounded-2xl bg-bg-card outline-1 -outline-offset-1 outline-dashed outline-white/15 ${className}`}
+      className={`pressable group relative flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 rounded-3xl bg-surface outline-1 -outline-offset-1 outline-dashed outline-black/15 ${className}`}
     >
-      <div className="flex size-12 items-center justify-center rounded-full bg-white/5 ring-1 ring-inset ring-white/10">
-        <CameraIcon className="size-6 stroke-ink-muted" />
+      <div className="flex size-12 items-center justify-center rounded-full bg-tennis-200 ring-1 ring-inset ring-tennis-500/30">
+        <CameraIcon className="size-6 stroke-ink" />
       </div>
-      <span className="text-sm font-medium text-ink-muted">
-        Add a photo
-      </span>
+      <span className="text-sm font-bold text-ink">Add a photo</span>
       <span className="text-xs text-ink-dim">tap to take or upload</span>
       <input
         ref={inputRef}
@@ -111,12 +107,12 @@ export function CompactPhotoButton({
     <button
       type="button"
       onClick={() => inputRef.current?.click()}
-      className="pressable group relative flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-bg-card outline-1 -outline-offset-1 outline-white/10"
+      className="pressable group relative flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-surface-2 outline-1 -outline-offset-1 outline-black/8"
     >
       {preview ? (
         <>
           <img src={preview} alt="" className="absolute inset-0 size-full object-cover" />
-          <div className="absolute inset-0 bg-bg/40 opacity-0 group-active:opacity-100" />
+          <div className="absolute inset-0 bg-paper/40 opacity-0 group-active:opacity-100" />
         </>
       ) : (
         <PlusIcon className="size-6 stroke-ink-muted" />
@@ -144,7 +140,6 @@ async function compressImage(
   maxDim: number,
   quality: number,
 ): Promise<Blob> {
-  // Read as bitmap, resize via canvas, output webp
   try {
     const bitmap = await createImageBitmap(file);
     const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));

@@ -12,12 +12,8 @@ import { StarInput } from "~/components/Stars";
 import { CompactPhotoButton } from "~/components/PhotoCapture";
 import { UserChip } from "~/components/UserChip";
 import { useCurrentUser, useRestaurants } from "~/data/hooks";
-import {
-  saveDish,
-  savePhoto,
-  saveVisit,
-} from "~/data/db";
-import type { Restaurant } from "~/data/types";
+import { saveDish, savePhoto, saveVisit } from "~/data/db";
+import { USERS, type Restaurant, type UserId } from "~/data/types";
 import { PlaceholderArt } from "~/components/RestaurantCard";
 
 interface PendingDish {
@@ -138,14 +134,11 @@ export function AddVisitPage() {
             type="submit"
             form="visit-form"
             disabled={!canSave || saving}
-            className="pressable relative flex items-center gap-1.5 rounded-full bg-flame-500/20 px-3 py-1.5 text-sm font-semibold text-flame-100 ring-1 ring-inset ring-flame-400/30 disabled:opacity-40"
+            className="pressable relative flex items-center gap-1.5 rounded-full bg-tennis-300 px-3 py-1.5 text-sm font-bold text-ink ring-1 ring-inset ring-tennis-500/30 disabled:opacity-40"
           >
             <CheckIcon className="size-4 stroke-current [stroke-width:2.5]" />
             Save
-            <span
-              className="pointer-events-none absolute inset-0 -m-2"
-              aria-hidden="true"
-            />
+            <span className="pointer-events-none absolute inset-0 -m-2" aria-hidden="true" />
           </button>
         }
       />
@@ -160,10 +153,15 @@ export function AddVisitPage() {
           <UserBadge user={user} />
         </Section>
 
-        <Section title="Overall rating" subtitle="How was the whole vibe?">
-          <div className="flex items-center justify-between gap-3">
-            <StarInput value={rating} onChange={setRating} size="lg" />
-            <span className="display text-3xl tabular-nums text-ink">
+        <Section title="Your rating" subtitle="Just your half of the duel.">
+          <div className="flex items-center justify-between gap-3 rounded-2xl bg-surface p-3 ring-1 ring-inset ring-line">
+            <StarInput
+              value={rating}
+              onChange={setRating}
+              size="lg"
+              color={USERS[user].accent}
+            />
+            <span className="display-tight text-3xl tabular-nums text-ink">
               {rating > 0 ? rating.toFixed(1) : "—"}
             </span>
           </div>
@@ -176,7 +174,7 @@ export function AddVisitPage() {
             aria-label="Date"
             value={toDateValue(date)}
             onChange={(e) => setDate(fromDateValue(e.target.value))}
-            className="w-full rounded-xl bg-bg-card px-3.5 py-3 text-base text-ink ring-1 ring-inset ring-white/5 [color-scheme:dark] focus:outline-none focus-visible:ring-flame-400/40"
+            className="w-full rounded-2xl bg-surface px-3.5 py-3 text-base text-ink ring-1 ring-inset ring-line focus:outline-none focus-visible:ring-tennis-500/40"
           />
         </Section>
 
@@ -188,7 +186,7 @@ export function AddVisitPage() {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
-            className="w-full resize-none rounded-xl bg-bg-card px-3.5 py-3 text-base text-ink placeholder:text-ink-faint ring-1 ring-inset ring-white/5 focus:outline-none focus-visible:ring-flame-400/40"
+            className="w-full resize-none rounded-2xl bg-surface px-3.5 py-3 text-base text-ink placeholder:text-ink-faint ring-1 ring-inset ring-line focus:outline-none focus-visible:ring-tennis-500/40"
           />
         </Section>
 
@@ -200,7 +198,7 @@ export function AddVisitPage() {
             placeholder="Date night"
             value={occasion}
             onChange={(e) => setOccasion(e.target.value)}
-            className="w-full rounded-xl bg-bg-card px-3.5 py-3 text-base text-ink placeholder:text-ink-faint ring-1 ring-inset ring-white/5 focus:outline-none focus-visible:ring-flame-400/40"
+            className="w-full rounded-2xl bg-surface px-3.5 py-3 text-base text-ink placeholder:text-ink-faint ring-1 ring-inset ring-line focus:outline-none focus-visible:ring-tennis-500/40"
           />
         </Section>
 
@@ -215,14 +213,11 @@ export function AddVisitPage() {
             <button
               type="button"
               onClick={addDish}
-              className="pressable relative flex items-center gap-1.5 rounded-full bg-bg-card px-3 py-1.5 text-xs font-semibold text-ink-muted ring-1 ring-inset ring-white/5"
+              className="pressable relative flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-xs font-bold text-ink ring-1 ring-inset ring-line"
             >
               <PlusIcon className="size-4 stroke-current [stroke-width:2]" />
               Add dish
-              <span
-                className="pointer-events-none absolute inset-0 -m-2"
-                aria-hidden="true"
-              />
+              <span className="pointer-events-none absolute inset-0 -m-2" aria-hidden="true" />
             </button>
           </div>
 
@@ -231,24 +226,21 @@ export function AddVisitPage() {
               <button
                 type="button"
                 onClick={addDish}
-                className="pressable group flex items-center gap-3 rounded-2xl bg-bg-card p-4 ring-1 ring-dashed ring-white/10"
+                className="pressable group flex items-center gap-3 rounded-2xl bg-surface p-4 ring-1 ring-dashed ring-line"
               >
-                <div className="flex size-12 items-center justify-center rounded-2xl bg-flame-500/10 ring-1 ring-inset ring-flame-400/20">
-                  <PlusIcon className="size-6 stroke-flame-200 [stroke-width:2]" />
+                <div className="flex size-12 items-center justify-center rounded-2xl bg-tennis-200 ring-1 ring-inset ring-tennis-500/30">
+                  <PlusIcon className="size-6 stroke-ink [stroke-width:2.2]" />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="text-sm font-medium text-ink">
-                    Add your first dish
-                  </p>
-                  <p className="text-xs text-ink-dim">
-                    Name it, rate it, photograph it.
-                  </p>
+                  <p className="text-sm font-bold text-ink">Add your first dish</p>
+                  <p className="text-xs text-ink-dim">Name it, rate it, photograph it.</p>
                 </div>
               </button>
             ) : (
               dishes.map((d, i) => (
                 <PendingDishCard
                   key={d.tmpId}
+                  user={user}
                   dish={d}
                   index={i}
                   onChange={(patch) => patchDish(d.tmpId, patch)}
@@ -262,13 +254,9 @@ export function AddVisitPage() {
         <button
           type="submit"
           disabled={!canSave || saving}
-          className="pressable mt-8 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-base font-semibold text-bg shadow-[0_22px_50px_-12px_oklch(0.65_0.21_46_/_0.6)] disabled:opacity-40"
-          style={{
-            background:
-              "radial-gradient(120% 120% at 30% 25%, oklch(0.82 0.18 60) 0%, oklch(0.62 0.21 40) 80%)",
-          }}
+          className="pressable mt-8 flex w-full items-center justify-center gap-2 rounded-2xl bg-tennis-300 py-3.5 text-base font-bold text-ink ring-1 ring-inset ring-tennis-500/30 shadow-[0_22px_50px_-12px_oklch(0.7_0.2_120_/_0.4)] disabled:opacity-40"
         >
-          <CheckIcon className="size-5 stroke-bg [stroke-width:2.5]" />
+          <CheckIcon className="size-5 stroke-ink [stroke-width:2.5]" />
           {saving ? "Saving…" : "Save visit"}
         </button>
       </form>
@@ -287,7 +275,7 @@ function Section({
 }) {
   return (
     <div className="mt-6">
-      <p className="text-[11px] tracking-[0.18em] text-ink-dim uppercase">
+      <p className="text-[11px] font-bold tracking-[0.18em] text-ink-dim uppercase">
         {title}
       </p>
       {subtitle ? (
@@ -298,13 +286,11 @@ function Section({
   );
 }
 
-function UserBadge({ user }: { user: "clark" | "angie" }) {
+function UserBadge({ user }: { user: UserId }) {
   return (
-    <div className="inline-flex items-center gap-2 rounded-2xl bg-bg-card px-3 py-2 ring-1 ring-inset ring-white/5">
+    <div className="inline-flex items-center gap-2 rounded-2xl bg-surface px-3 py-2 ring-1 ring-inset ring-line">
       <UserChip id={user} size="md" />
-      <span className="text-sm font-medium text-ink">
-        {user === "clark" ? "Clark" : "Angie"}
-      </span>
+      <span className="text-sm font-bold text-ink">{USERS[user].name}</span>
       <span className="text-xs text-ink-faint">switch in header</span>
     </div>
   );
@@ -319,13 +305,13 @@ function RestaurantSelector({
 }) {
   return (
     <div className="mt-2">
-      <p className="text-[11px] tracking-[0.18em] text-ink-dim uppercase">
+      <p className="text-[11px] font-bold tracking-[0.18em] text-ink-dim uppercase">
         Restaurant
       </p>
       <button
         type="button"
         onClick={onChange}
-        className="pressable mt-2 flex w-full items-center gap-3 rounded-2xl bg-bg-card p-3 text-left ring-1 ring-inset ring-white/5"
+        className="pressable mt-2 flex w-full items-center gap-3 rounded-2xl bg-surface p-3 text-left ring-1 ring-inset ring-line"
       >
         {restaurant ? (
           <>
@@ -342,19 +328,17 @@ function RestaurantSelector({
                 </p>
               ) : null}
             </div>
-            <span className="rounded-full bg-white/5 px-2.5 py-1 text-[10px] tracking-wide text-ink-dim uppercase">
+            <span className="rounded-full bg-tennis-200 px-2.5 py-1 text-[10px] font-bold tracking-wide text-ink uppercase">
               Change
             </span>
           </>
         ) : (
           <>
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-flame-500/15 ring-1 ring-inset ring-flame-400/20">
-              <MagnifyingGlassIcon className="size-5 stroke-flame-200" />
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-tennis-200 ring-1 ring-inset ring-tennis-500/30">
+              <MagnifyingGlassIcon className="size-5 stroke-ink" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium text-ink">
-                Choose a restaurant
-              </p>
+              <p className="text-sm font-bold text-ink">Choose a restaurant</p>
               <p className="text-xs text-ink-dim">From your Jonestown list</p>
             </div>
           </>
@@ -365,11 +349,13 @@ function RestaurantSelector({
 }
 
 function PendingDishCard({
+  user,
   dish,
   index,
   onChange,
   onRemove,
 }: {
+  user: UserId;
   dish: PendingDish;
   index: number;
   onChange: (patch: Partial<PendingDish>) => void;
@@ -382,7 +368,7 @@ function PendingDishCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -8 }}
       transition={{ type: "spring", stiffness: 300, damping: 26 }}
-      className="rounded-2xl bg-bg-card p-3 ring-1 ring-inset ring-white/5"
+      className="rounded-2xl bg-surface p-3 ring-1 ring-inset ring-line"
     >
       <div className="flex gap-3">
         <CompactPhotoButton
@@ -391,7 +377,7 @@ function PendingDishCard({
         />
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between">
-            <p className="text-[11px] tracking-[0.18em] text-ink-dim uppercase">
+            <p className="text-[11px] font-bold tracking-[0.18em] text-ink-dim uppercase">
               Dish {index + 1}
             </p>
             <button
@@ -401,10 +387,7 @@ function PendingDishCard({
               className="pressable relative flex size-7 items-center justify-center rounded-full text-ink-faint hover:text-ink"
             >
               <TrashIcon className="size-4 stroke-current" />
-              <span
-                className="pointer-events-none absolute inset-0 -m-2"
-                aria-hidden="true"
-              />
+              <span className="pointer-events-none absolute inset-0 -m-2" aria-hidden="true" />
             </button>
           </div>
           <input
@@ -414,15 +397,16 @@ function PendingDishCard({
             placeholder="Smoked brisket"
             value={dish.name}
             onChange={(e) => onChange({ name: e.target.value })}
-            className="mt-0.5 w-full bg-transparent text-base font-medium text-ink placeholder:text-ink-faint focus:outline-none"
+            className="mt-0.5 w-full bg-transparent text-base font-bold text-ink placeholder:text-ink-faint focus:outline-none"
           />
           <div className="mt-1.5 flex items-center justify-between gap-2">
             <StarInput
               value={dish.rating}
               onChange={(v) => onChange({ rating: v })}
               size="md"
+              color={USERS[user].accent}
             />
-            <span className="text-xs tabular-nums text-ink-muted">
+            <span className="text-xs font-bold tabular-nums text-ink-muted">
               {dish.rating > 0 ? dish.rating.toFixed(1) : "—"}
             </span>
           </div>
@@ -435,7 +419,7 @@ function PendingDishCard({
         value={dish.notes}
         onChange={(e) => onChange({ notes: e.target.value })}
         rows={2}
-        className="mt-2 w-full resize-none rounded-xl bg-bg-soft px-3 py-2 text-sm text-ink placeholder:text-ink-faint ring-1 ring-inset ring-white/5 focus:outline-none focus-visible:ring-flame-400/40"
+        className="mt-2 w-full resize-none rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink placeholder:text-ink-faint ring-1 ring-inset ring-line focus:outline-none focus-visible:ring-tennis-500/40"
       />
     </motion.div>
   );
@@ -469,18 +453,15 @@ function RestaurantPicker({
           <button
             type="button"
             onClick={onCancel}
-            className="pressable relative rounded-full bg-bg-card/70 px-3 py-1.5 text-xs font-medium text-ink-muted ring-1 ring-inset ring-white/10"
+            className="pressable relative rounded-full bg-surface px-3 py-1.5 text-xs font-bold text-ink-muted ring-1 ring-inset ring-line"
           >
             Cancel
-            <span
-              className="pointer-events-none absolute inset-0 -m-2"
-              aria-hidden="true"
-            />
+            <span className="pointer-events-none absolute inset-0 -m-2" aria-hidden="true" />
           </button>
         }
       />
       <div className="px-4">
-        <div className="flex items-center gap-2 rounded-2xl bg-bg-card px-3 py-2.5 ring-1 ring-inset ring-white/5">
+        <div className="flex items-center gap-2 rounded-2xl bg-surface px-3 py-2.5 ring-1 ring-inset ring-line">
           <MagnifyingGlassIcon className="size-5 shrink-0 stroke-ink-dim" />
           <input
             type="search"
@@ -499,7 +480,7 @@ function RestaurantPicker({
               key={r.id}
               type="button"
               onClick={() => onPick(r.id)}
-              className="pressable flex items-center gap-3 rounded-2xl bg-bg-card p-3 text-left ring-1 ring-inset ring-white/5"
+              className="pressable flex items-center gap-3 rounded-2xl bg-surface p-3 text-left ring-1 ring-inset ring-line"
             >
               <div className="relative size-12 shrink-0 overflow-hidden rounded-xl">
                 <PlaceholderArt seed={r.id} name={r.name} />

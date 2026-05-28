@@ -12,15 +12,48 @@ export const USERS: Record<UserId, UserProfile> = {
     id: "clark",
     name: "Clark",
     initial: "C",
-    accent: "oklch(0.79 0.16 58)", // ember
+    accent: "oklch(0.58 0.21 254)", // electric cobalt
   },
   angie: {
     id: "angie",
     name: "Angie",
     initial: "A",
-    accent: "oklch(0.78 0.14 12)", // rose
+    accent: "oklch(0.62 0.25 12)", // hot magenta
   },
 };
+
+export type VerdictStatus = "locked" | "solo" | "unanimous" | "split" | "divided";
+
+export interface VerdictMeta {
+  status: VerdictStatus;
+  combined?: number;
+  clark?: number;
+  angie?: number;
+  gap?: number; // |clark - angie|
+}
+
+export function verdictFromRatings(
+  clark: number | undefined,
+  angie: number | undefined,
+): VerdictMeta {
+  if (clark === undefined && angie === undefined) {
+    return { status: "locked" };
+  }
+  if (clark === undefined || angie === undefined) {
+    return {
+      status: "solo",
+      combined: clark ?? angie,
+      clark,
+      angie,
+    };
+  }
+  const gap = Math.abs(clark - angie);
+  const combined = (clark + angie) / 2;
+  let status: VerdictStatus = "unanimous";
+  if (gap > 1.5) status = "divided";
+  else if (gap > 0.5) status = "split";
+  return { status, combined, clark, angie, gap };
+}
 
 export interface Restaurant {
   id: string;
@@ -76,4 +109,5 @@ export interface RestaurantAggregate {
   combinedRating?: number;
   bothRated: boolean;
   topDishes: Dish[];
+  verdict: VerdictMeta;
 }
