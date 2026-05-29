@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { Header } from "~/components/Header";
 import { Icon } from "~/components/Icon";
 import { Stars, UserStars } from "~/components/Stars";
+import { VerdictPill } from "~/components/PassFail";
 import { UserChip } from "~/components/UserChip";
 import { DuelScore, GapBar, VerdictBadge } from "~/components/Duel";
 import { VsPublic } from "~/components/PublicRating";
@@ -259,7 +260,12 @@ function TakeCard({
 }) {
   const u = USERS[user];
   const latestNote = visits.find((v) => v.notes)?.notes;
-  const topDish = [...dishes].sort((a, b) => b.rating - a.rating)[0];
+  // Surface the strongest-signal dish first: "yes" verdicts win.
+  const topDish =
+    dishes.find((d) => d.verdict === "yes") ??
+    [...dishes].sort(
+      (a, b) => (b.rating ?? 0) - (a.rating ?? 0),
+    )[0];
   return (
     <div className="relative overflow-hidden rounded-3xl bg-surface p-4 ring-1 ring-inset ring-line">
       <div
@@ -347,10 +353,21 @@ function DishTile({ dish }: { dish: Dish }) {
           {dish.name}
         </p>
         <div className="mt-1 flex items-center justify-between gap-2">
-          <Stars value={dish.rating} size="xs" color={u.accent} />
-          <span className="text-[11px] font-bold tabular-nums text-ink-muted">
-            {dish.rating.toFixed(1)}
-          </span>
+          {dish.verdict ? (
+            <VerdictPill verdict={dish.verdict} size="sm" />
+          ) : dish.rating !== undefined ? (
+            // Legacy v1 data — keep showing the original star rating.
+            <span className="flex items-center gap-1">
+              <Stars value={dish.rating} size="xs" color={u.accent} />
+              <span className="text-[10px] font-bold tabular-nums text-ink-muted">
+                {dish.rating.toFixed(1)}
+              </span>
+            </span>
+          ) : (
+            <span className="text-[10px] font-bold tracking-wide text-ink-faint uppercase">
+              Meh
+            </span>
+          )}
         </div>
       </div>
     </motion.div>

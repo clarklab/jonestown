@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Header } from "~/components/Header";
 import { Icon } from "~/components/Icon";
-import { Stars } from "~/components/Stars";
+import { VerdictPill } from "~/components/PassFail";
 import { UserChip } from "~/components/UserChip";
 import {
   useAggregates,
@@ -29,22 +29,28 @@ export function ProfilePage() {
     (a) => a.ratingByUser[user] !== undefined,
   ).length;
 
-  const favoriteDishes = useMemo(
-    () =>
-      [...myDishes]
-        .sort((a, b) => b.rating - a.rating || b.createdAt - a.createdAt)
-        .slice(0, 5),
-    [myDishes],
-  );
+  const favoriteDishes = useMemo(() => {
+    const rank = (d: { verdict?: "yes" | "no"; rating?: number }) =>
+      d.verdict === "yes"
+        ? 2
+        : d.verdict === "no"
+          ? 0
+          : d.rating !== undefined
+            ? d.rating / 5
+            : 1; // meh in the middle
+    return [...myDishes]
+      .filter((d) => d.verdict === "yes")
+      .sort((a, b) => rank(b) - rank(a) || b.createdAt - a.createdAt)
+      .slice(0, 5);
+  }, [myDishes]);
 
   const avgRating = useMemo(() => {
-    const all = [
-      ...myVisits.filter((v) => v.rating !== undefined).map((v) => v.rating!),
-      ...myDishes.map((d) => d.rating),
-    ];
+    const all = myVisits
+      .filter((v) => v.rating !== undefined)
+      .map((v) => v.rating!);
     if (!all.length) return undefined;
     return all.reduce((s, n) => s + n, 0) / all.length;
-  }, [myVisits, myDishes]);
+  }, [myVisits]);
 
   const partner: UserId = user === "a" ? "b" : "a";
 
@@ -195,11 +201,13 @@ export function ProfilePage() {
               >
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold text-ink">{d.name}</p>
-                  <Stars value={d.rating} size="xs" color={u.accent} />
+                  {d.notes ? (
+                    <p className="line-clamp-1 text-xs text-ink-dim italic">
+                      "{d.notes}"
+                    </p>
+                  ) : null}
                 </div>
-                <span className="display-tight text-xl tabular-nums text-ink">
-                  {d.rating.toFixed(1)}
-                </span>
+                <VerdictPill verdict={d.verdict} size="md" />
               </div>
             ))}
           </div>

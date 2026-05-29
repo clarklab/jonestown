@@ -135,6 +135,12 @@ export interface Visit {
   createdAt: number;
 }
 
+/**
+ * Dish verdict — pass / fail / no opinion.
+ * `undefined` is the default "meh, no strong feelings" state.
+ */
+export type DishVerdict = "yes" | "no";
+
 export interface Dish {
   id: string;
   coupleId?: string;
@@ -142,7 +148,15 @@ export interface Dish {
   restaurantId: string;
   userId: UserId;
   name: string;
-  rating: number;
+  /**
+   * Would-order-again verdict. `undefined` = meh.
+   */
+  verdict?: DishVerdict;
+  /**
+   * Legacy 0..5 rating from older versions. New writes leave this
+   * unset; aggregates fall back to it when no `verdict` is present.
+   */
+  rating?: number;
   notes?: string;
   photoId?: string;
   createdAt: number;

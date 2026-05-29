@@ -252,8 +252,8 @@ export async function ensureSeeded(coupleId: string): Promise<void> {
     const restId = isDefault ? "bamboo-garden" : `${coupleId}:bamboo-garden`;
     const exists = await db.get("restaurants", restId);
     if (exists) {
-      const bambooV2Flag = await db.get("meta", `bamboo:${coupleId}:v2`);
-      if (!bambooV2Flag) {
+      const bambooV3Flag = await db.get("meta", `bamboo:${coupleId}:v3`);
+      if (!bambooV3Flag) {
         const tx = db.transaction(
           ["visits", "dishes", "meta"],
           "readwrite",
@@ -290,7 +290,7 @@ export async function ensureSeeded(coupleId: string): Promise<void> {
           createdAt: existingB?.createdAt ?? date + 1000,
         });
 
-        // Phoenix chicken dish (Clark's pick)
+        // Phoenix chicken dish (Clark's pick) — "would get again"
         await tx.objectStore("dishes").put({
           id: `${coupleId}-a-bamboo-phoenix`,
           coupleId,
@@ -298,12 +298,12 @@ export async function ensureSeeded(coupleId: string): Promise<void> {
           restaurantId: restId,
           userId: "a",
           name: "Phoenix Chicken",
-          rating: 4,
+          verdict: "yes",
           notes: "Would get again.",
           createdAt: date,
         });
 
-        // Sweet & sour chicken dish (Angie's pick)
+        // Sweet & sour chicken (Angie's pick) — meh, needs more pineapple
         await tx.objectStore("dishes").put({
           id: `${coupleId}-b-bamboo-sweetsour`,
           coupleId,
@@ -311,13 +311,12 @@ export async function ensureSeeded(coupleId: string): Promise<void> {
           restaurantId: restId,
           userId: "b",
           name: "Sweet & Sour Chicken",
-          rating: 3,
+          verdict: undefined,
           notes: "Wanted more pineapple.",
           createdAt: date + 500,
         });
 
-        // The shared fried-rice complaint, logged once on Clark's visit so
-        // the dish appears on the restaurant page.
+        // The shared fried-rice complaint — pass
         await tx.objectStore("dishes").put({
           id: `${coupleId}-a-bamboo-friedrice`,
           coupleId,
@@ -325,18 +324,21 @@ export async function ensureSeeded(coupleId: string): Promise<void> {
           restaurantId: restId,
           userId: "a",
           name: "Fried Rice",
-          rating: 2.5,
+          verdict: "no",
           notes: "Mid. Needs veggies.",
           createdAt: date + 200,
         });
 
-        // Mark both v1 and v2 done so future bumps don't re-run anything.
+        // Mark every prior bamboo migration done.
         await tx
           .objectStore("meta")
           .put({ key: `bamboo:${coupleId}:v1`, value: true });
         await tx
           .objectStore("meta")
           .put({ key: `bamboo:${coupleId}:v2`, value: true });
+        await tx
+          .objectStore("meta")
+          .put({ key: `bamboo:${coupleId}:v3`, value: true });
         await tx.done;
         emitChange("visits");
         emitChange("dishes");

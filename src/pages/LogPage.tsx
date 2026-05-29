@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Header } from "~/components/Header";
 import { Stars } from "~/components/Stars";
+import { VerdictPill } from "~/components/PassFail";
 import { UserChip } from "~/components/UserChip";
 import {
   useAllDishes,
@@ -241,10 +242,20 @@ function DishThumb({ dish }: { dish: Dish }) {
       <div className="px-2 py-1.5">
         <p className="line-clamp-1 text-xs font-bold text-ink">{dish.name}</p>
         <div className="mt-0.5 flex items-center justify-between">
-          <Stars value={dish.rating} size="xs" color={member.accent} />
-          <span className="text-[10px] font-bold tabular-nums text-ink-muted">
-            {dish.rating.toFixed(1)}
-          </span>
+          {dish.verdict ? (
+            <VerdictPill verdict={dish.verdict} size="xs" showLabel={false} />
+          ) : dish.rating !== undefined ? (
+            <span className="flex items-center gap-1">
+              <Stars value={dish.rating} size="xs" color={member.accent} />
+              <span className="text-[10px] font-bold tabular-nums text-ink-muted">
+                {dish.rating.toFixed(1)}
+              </span>
+            </span>
+          ) : (
+            <span className="text-[9px] font-bold tracking-wide text-ink-faint uppercase">
+              Meh
+            </span>
+          )}
         </div>
       </div>
     </div>

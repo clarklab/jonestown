@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Header } from "~/components/Header";
 import { Icon } from "~/components/Icon";
-import { Stars, StarInput } from "~/components/Stars";
+import { PassFailInput, VerdictPill } from "~/components/PassFail";
 import { PhotoCapture } from "~/components/PhotoCapture";
 import { useToast } from "~/components/Toast";
 import { UserChip } from "~/components/UserChip";
@@ -10,7 +10,7 @@ import { useCurrentCouple, useCurrentUser, useDishes } from "~/data/hooks";
 import { deleteDish, saveDish, savePhoto } from "~/data/db";
 import { formatDateLong } from "~/utils/format";
 import { getDb } from "~/data/db";
-import { memberOf, type Visit } from "~/data/types";
+import { type DishVerdict, type Visit } from "~/data/types";
 
 export function AddDishPage() {
   const { id: restaurantId, visitId } = useParams<{
@@ -32,7 +32,7 @@ export function AddDishPage() {
   }, [visitId]);
 
   const [name, setName] = useState("");
-  const [rating, setRating] = useState(0);
+  const [verdict, setVerdict] = useState<DishVerdict | undefined>(undefined);
   const [notes, setNotes] = useState("");
   const [photoBlob, setPhotoBlob] = useState<Blob | null>(null);
   const [saving, setSaving] = useState(false);
@@ -57,13 +57,13 @@ export function AddDishPage() {
       restaurantId,
       userId: user,
       name: dishName,
-      rating,
+      verdict,
       notes: notes.trim() || undefined,
       photoId,
       createdAt: Date.now(),
     });
     setName("");
-    setRating(0);
+    setVerdict(undefined);
     setNotes("");
     setPhotoBlob(null);
     setSaving(false);
@@ -130,18 +130,13 @@ export function AddDishPage() {
 
           <div className="mt-5">
             <p className="text-[11px] font-bold tracking-[0.18em] text-ink-dim uppercase">
-              Rating
+              Order again?
             </p>
-            <div className="mt-2 flex items-center justify-between gap-3 rounded-2xl bg-surface p-3 ring-1 ring-inset ring-line">
-              <StarInput
-                value={rating}
-                onChange={setRating}
-                size="lg"
-                color={memberOf(couple, user).accent}
-              />
-              <span className="display-tight text-3xl tabular-nums text-ink">
-                {rating > 0 ? rating.toFixed(1) : "—"}
-              </span>
+            <p className="mt-0.5 text-xs text-ink-faint">
+              Skip if it was just meh.
+            </p>
+            <div className="mt-2">
+              <PassFailInput value={verdict} onChange={setVerdict} size="md" />
             </div>
           </div>
 
@@ -187,15 +182,13 @@ export function AddDishPage() {
                   <UserChip id={d.userId} size="sm" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold text-ink">{d.name}</p>
-                    <Stars
-                      value={d.rating}
-                      size="xs"
-                      color={memberOf(couple, d.userId).accent}
-                    />
+                    {d.notes ? (
+                      <p className="line-clamp-1 text-[11px] text-ink-dim">
+                        {d.notes}
+                      </p>
+                    ) : null}
                   </div>
-                  <span className="shrink-0 text-xs font-bold tabular-nums text-ink-muted">
-                    {d.rating.toFixed(1)}
-                  </span>
+                  <VerdictPill verdict={d.verdict} size="sm" showLabel={false} />
                   <button
                     type="button"
                     onClick={() => deleteDish(d.id)}

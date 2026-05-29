@@ -13,13 +13,19 @@ import {
   useRestaurants,
 } from "~/data/hooks";
 import { saveDish, savePhoto, saveVisit } from "~/data/db";
-import { memberOf, type Restaurant, type UserId } from "~/data/types";
+import {
+  memberOf,
+  type DishVerdict,
+  type Restaurant,
+  type UserId,
+} from "~/data/types";
+import { PassFailInput } from "~/components/PassFail";
 import { PlaceholderArt } from "~/components/RestaurantCard";
 
 interface PendingDish {
   tmpId: string;
   name: string;
-  rating: number;
+  verdict: DishVerdict | undefined;
   notes: string;
   photoBlob: Blob | null;
 }
@@ -60,7 +66,7 @@ export function AddVisitPage() {
       {
         tmpId: crypto.randomUUID(),
         name: "",
-        rating: 0,
+        verdict: undefined,
         notes: "",
         photoBlob: null,
       },
@@ -103,7 +109,7 @@ export function AddVisitPage() {
         restaurantId,
         userId: user,
         name: d.name.trim(),
-        rating: d.rating,
+        verdict: d.verdict,
         notes: d.notes.trim() || undefined,
         photoId,
         createdAt: now,
@@ -251,7 +257,6 @@ export function AddVisitPage() {
               dishes.map((d, i) => (
                 <PendingDishCard
                   key={d.tmpId}
-                  user={user}
                   dish={d}
                   index={i}
                   onChange={(patch) => patchDish(d.tmpId, patch)}
@@ -361,19 +366,16 @@ function RestaurantSelector({
 }
 
 function PendingDishCard({
-  user,
   dish,
   index,
   onChange,
   onRemove,
 }: {
-  user: UserId;
   dish: PendingDish;
   index: number;
   onChange: (patch: Partial<PendingDish>) => void;
   onRemove: () => void;
 }) {
-  const couple = useCurrentCouple();
   return (
     <motion.div
       layout
@@ -412,16 +414,12 @@ function PendingDishCard({
             onChange={(e) => onChange({ name: e.target.value })}
             className="mt-0.5 w-full bg-transparent text-base font-bold text-ink placeholder:text-ink-faint focus:outline-none"
           />
-          <div className="mt-1.5 flex items-center justify-between gap-2">
-            <StarInput
-              value={dish.rating}
-              onChange={(v) => onChange({ rating: v })}
-              size="md"
-              color={memberOf(couple, user).accent}
+          <div className="mt-2">
+            <PassFailInput
+              value={dish.verdict}
+              onChange={(v) => onChange({ verdict: v })}
+              size="sm"
             />
-            <span className="text-xs font-bold tabular-nums text-ink-muted">
-              {dish.rating > 0 ? dish.rating.toFixed(1) : "—"}
-            </span>
           </div>
         </div>
       </div>

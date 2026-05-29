@@ -208,17 +208,24 @@ export function useAggregates(): {
         if (v.rating !== undefined) ratingsByUser[v.userId].push(v.rating);
         if (v.date > lastVisit) lastVisit = v.date;
       }
-      for (const d of ds) {
-        ratingsByUser[d.userId].push(d.rating);
-      }
+      // Dishes no longer contribute to the user's aggregate — visit ratings
+      // are the spine of the score. Dishes are pass/fail companions.
 
       const aAvg = avg(ratingsByUser.a);
       const bAvg = avg(ratingsByUser.b);
       const both = aAvg !== undefined && bAvg !== undefined;
       const combined = both ? (aAvg! + bAvg!) / 2 : (aAvg ?? bAvg);
 
+      // Surface dishes with the strongest signal first: "yes" verdicts,
+      // then meh, then "no". Fall back to legacy rating for old data.
+      const dishScore = (d: Dish): number => {
+        if (d.verdict === "yes") return 2;
+        if (d.verdict === "no") return 0;
+        if (d.rating !== undefined) return d.rating >= 4 ? 2 : d.rating <= 2 ? 0 : 1;
+        return 1;
+      };
       const topDishes = [...ds]
-        .sort((a, b) => b.rating - a.rating || b.createdAt - a.createdAt)
+        .sort((a, b) => dishScore(b) - dishScore(a) || b.createdAt - a.createdAt)
         .slice(0, 3);
 
       const agg: RestaurantAggregate = {
