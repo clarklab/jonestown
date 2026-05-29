@@ -1,11 +1,14 @@
-import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { useRef, useState } from "react";
+import { motion, useAnimationControls } from "framer-motion";
 import { Icon } from "~/components/Icon";
 import { BrandTile } from "~/components/BrandMark";
+import { APP_PIN } from "~/data/db";
 
-export function LandingPage() {
+const PIN_LENGTH = APP_PIN.length;
+
+export function LandingPage({ onUnlock }: { onUnlock: () => void }) {
   return (
-    <div className="relative isolate mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pt-12 pb-12 safe-bottom">
+    <div className="relative isolate mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pt-12 pb-8 safe-bottom">
       <Splash />
 
       <header className="relative flex items-center gap-3">
@@ -13,51 +16,201 @@ export function LandingPage() {
         <div>
           <p className="display-tight text-xl text-ink">Jonestown</p>
           <p className="text-[11px] font-bold tracking-[0.18em] text-ink-dim uppercase">
-            Two-fork supper club
+            Clark &amp; Angie only
           </p>
         </div>
       </header>
 
-      <div className="relative mt-12 flex-1">
+      <div className="relative mt-11 flex-1">
         <p className="text-[11px] font-bold tracking-[0.22em] text-ink-dim uppercase">
-          For two people, eating around one town
+          A supper club of exactly two
         </p>
-        <h1 className="display-tight mt-2 text-[52px] leading-[0.92] tracking-tight text-balance text-ink">
-          Eat the whole map,{" "}
-          <span className="text-tennis-700">together</span>.
+        <h1 className="display-tight mt-2 text-[50px] leading-[0.92] tracking-tight text-balance text-ink">
+          Yelp for the couple who{" "}
+          <span className="text-tennis-700">always goes back</span>.
         </h1>
         <p className="mt-4 max-w-[42ch] text-pretty text-base text-ink-muted">
-          A private review club for couples. Every restaurant in your town
-          starts hidden. Both of you have to rate it before it unlocks. Argue
-          honestly. Photograph everything.
+          Our own private map of every restaurant in town. We each rate the
+          spots we hit — and a place only lights up once both of us have
+          weighed in. No groups. No strangers. Just us, arguing about brisket.
         </p>
 
-        <div className="mt-10 grid grid-cols-3 gap-3">
-          <Feature icon="lock" label="Fog of war" sub="Unlock by rating" />
-          <Feature icon="bolt" label="Duel ratings" sub="Two scores, one verdict" />
-          <Feature icon="auto_awesome" label="Couple badge" sub="Yours alone" />
+        <div className="mt-9 grid grid-cols-3 gap-3">
+          <Feature
+            icon="join_inner"
+            label="Just us two"
+            sub="A club of two"
+          />
+          <Feature
+            icon="explore"
+            label="The whole map"
+            sub="Unlock together"
+          />
+          <Feature
+            icon="balance"
+            label="Dueling takes"
+            sub="Mine vs yours"
+          />
         </div>
       </div>
 
-      <div className="relative mt-12 flex flex-col gap-3">
-        <Link
-          to="/claim"
-          className="pressable flex items-center justify-center gap-2 rounded-2xl bg-tennis-300 py-4 text-base font-bold text-ink ring-1 ring-inset ring-tennis-500/30 shadow-[0_22px_50px_-12px_oklch(0.7_0.2_120_/_0.45)]"
+      <PinGate onUnlock={onUnlock} />
+
+      <p className="relative mt-7 text-center text-[11px] leading-relaxed text-ink-faint">
+        Want your own two-person edition?{" "}
+        <a
+          href="mailto:clark@superfun.team?subject=I%20want%20my%20own%20Jonestown"
+          className="font-bold text-ink-dim underline underline-offset-2"
         >
-          <Icon name="add" size={22} weight={700} color="var(--color-ink)" />
-          Start a new club
-        </Link>
-        <Link
-          to="/join"
-          className="pressable flex items-center justify-center gap-2 rounded-2xl bg-surface py-4 text-base font-bold text-ink ring-1 ring-inset ring-line"
-        >
-          <Icon name="login" size={22} weight={600} color="var(--color-ink)" />
-          Join a partner
-        </Link>
-        <p className="mt-2 text-center text-xs text-ink-faint">
-          Web app. Add to home screen for the full experience.
+          Email me
+        </a>
+        .
+      </p>
+    </div>
+  );
+}
+
+function PinGate({ onUnlock }: { onUnlock: () => void }) {
+  const [digits, setDigits] = useState<string[]>(
+    Array(PIN_LENGTH).fill(""),
+  );
+  const [error, setError] = useState(false);
+  const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
+  const shake = useAnimationControls();
+
+  const pin = digits.join("");
+  const complete = pin.length === PIN_LENGTH && digits.every(Boolean);
+
+  const focusCell = (i: number) => {
+    const el = inputsRef.current[i];
+    if (el) {
+      el.focus();
+      el.select();
+    }
+  };
+
+  const attempt = (value: string) => {
+    if (value === APP_PIN) {
+      onUnlock();
+    } else {
+      setError(true);
+      void shake.start({
+        x: [0, -9, 9, -6, 6, 0],
+        transition: { duration: 0.4 },
+      });
+      setDigits(Array(PIN_LENGTH).fill(""));
+      focusCell(0);
+    }
+  };
+
+  const handleChange = (i: number, raw: string) => {
+    const cleaned = raw.replace(/\D/g, "");
+    if (!cleaned) {
+      setDigits((d) => {
+        const next = [...d];
+        next[i] = "";
+        return next;
+      });
+      return;
+    }
+    setError(false);
+
+    // Support pasting / autofill of the whole code into one cell.
+    if (cleaned.length > 1) {
+      const spread = cleaned.slice(0, PIN_LENGTH).split("");
+      const next = Array(PIN_LENGTH)
+        .fill("")
+        .map((_, idx) => spread[idx] ?? "");
+      setDigits(next);
+      const filled = next.filter(Boolean).length;
+      focusCell(Math.min(filled, PIN_LENGTH - 1));
+      if (next.every(Boolean)) attempt(next.join(""));
+      return;
+    }
+
+    setDigits((d) => {
+      const next = [...d];
+      next[i] = cleaned;
+      if (next.every(Boolean)) {
+        // Defer so the final digit paints before we judge it.
+        queueMicrotask(() => attempt(next.join("")));
+      }
+      return next;
+    });
+    if (i < PIN_LENGTH - 1) focusCell(i + 1);
+  };
+
+  const handleKeyDown = (
+    i: number,
+    e: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
+    if (e.key === "Backspace" && !digits[i] && i > 0) {
+      e.preventDefault();
+      focusCell(i - 1);
+      setDigits((d) => {
+        const next = [...d];
+        next[i - 1] = "";
+        return next;
+      });
+    }
+  };
+
+  return (
+    <div className="relative mt-10">
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] font-bold tracking-[0.22em] text-ink-dim uppercase">
+          Enter your PIN
         </p>
+        <span className="flex items-center gap-1 text-[11px] font-medium text-ink-faint">
+          <Icon name="lock" size={13} variant="fill" color="currentColor" />
+          Private
+        </span>
       </div>
+
+      <motion.div animate={shake} className="mt-3 flex justify-between gap-2.5">
+        {digits.map((d, i) => (
+          <input
+            key={i}
+            ref={(el) => {
+              inputsRef.current[i] = el;
+            }}
+            type="tel"
+            inputMode="numeric"
+            autoComplete={i === 0 ? "one-time-code" : "off"}
+            maxLength={PIN_LENGTH}
+            value={d}
+            onChange={(e) => handleChange(i, e.target.value)}
+            onKeyDown={(e) => handleKeyDown(i, e)}
+            onFocus={(e) => e.target.select()}
+            aria-label={`PIN digit ${i + 1}`}
+            className={`h-16 w-full rounded-2xl bg-surface text-center text-3xl font-bold tabular-nums text-ink caret-tennis-700 ring-1 ring-inset transition-colors focus:outline-none ${
+              error
+                ? "ring-2 ring-angie-400"
+                : d
+                  ? "ring-2 ring-tennis-500/50"
+                  : "ring-line focus-visible:ring-tennis-500/40"
+            }`}
+          />
+        ))}
+      </motion.div>
+
+      <div className="mt-2 h-4">
+        {error ? (
+          <p className="text-center text-xs font-bold text-angie-500">
+            Not quite. Try again.
+          </p>
+        ) : null}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => attempt(pin)}
+        disabled={!complete}
+        className="pressable mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-tennis-300 py-4 text-base font-bold text-ink ring-1 ring-inset ring-tennis-500/30 shadow-[0_22px_50px_-12px_oklch(0.7_0.2_120_/_0.45)] transition-opacity disabled:opacity-40"
+      >
+        <Icon name="lock_open" size={22} color="var(--color-ink)" />
+        Launch app
+      </button>
     </div>
   );
 }
@@ -73,8 +226,8 @@ function Feature({
 }) {
   return (
     <div className="flex flex-col gap-1 rounded-2xl bg-surface p-3 text-left ring-1 ring-inset ring-line">
-      <div className="flex size-8 items-center justify-center rounded-xl bg-tennis-100 text-ink">
-        <Icon name={icon} size={18} variant="fill" weight={600} />
+      <div className="flex size-8 items-center justify-center rounded-xl bg-tennis-100 text-tennis-800">
+        <Icon name={icon} size={20} color="currentColor" />
       </div>
       <p className="mt-1 text-[12px] leading-tight font-bold text-ink">
         {label}

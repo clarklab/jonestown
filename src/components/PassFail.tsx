@@ -81,7 +81,7 @@ export function PassFailInput({
               name={t.icon}
               size={dims.icon}
               variant={active ? "fill" : "outline"}
-              weight={active ? 700 : 500}
+              weight={200}
               color="currentColor"
             />
             {t.label}
@@ -121,7 +121,7 @@ export function VerdictPill({
         name={t.icon}
         size={dims.icon}
         variant="fill"
-        weight={700}
+        weight={200}
         color="currentColor"
       />
       {showLabel ? t.label : null}

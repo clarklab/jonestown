@@ -82,7 +82,7 @@ export function AddDishPage() {
             disabled={!canSave || saving}
             className="pressable relative flex items-center gap-1.5 rounded-full bg-tennis-300 px-3 py-1.5 text-sm font-bold text-ink ring-1 ring-inset ring-tennis-500/30 disabled:opacity-40"
           >
-            <Icon name="check" size={18} weight={700} color="currentColor" />
+            <Icon name="check" size={18} weight={200} color="currentColor" />
             Add
             <span className="pointer-events-none absolute inset-0 -m-2" aria-hidden="true" />
           </button>
@@ -163,7 +163,7 @@ export function AddDishPage() {
             disabled={!canSave || saving}
             className="pressable mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-tennis-300 py-3.5 text-base font-bold text-ink ring-1 ring-inset ring-tennis-500/30 shadow-[0_22px_50px_-12px_oklch(0.7_0.2_120_/_0.4)] disabled:opacity-40"
           >
-            <Icon name="check" size={22} weight={700} color="var(--color-ink)" />
+            <Icon name="check" size={22} weight={200} color="var(--color-ink)" />
             {saving ? "Adding…" : "Add dish"}
           </button>
         </form>

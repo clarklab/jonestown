@@ -81,7 +81,7 @@ export function HomePage() {
             <LegendChip color="oklch(0.95 0.06 60)" label="1 fork" border="oklch(0.6 0.18 100)" />
             <LegendChip
               color="var(--color-tennis-300)"
-              label="Both ★"
+              label="Both in"
               border="oklch(0.7 0.21 122)"
             />
             <LegendChip
@@ -171,7 +171,7 @@ export function HomePage() {
           className="pressable group flex items-center gap-3 rounded-3xl bg-surface p-4 ring-1 ring-inset ring-line"
         >
           <div className="flex size-12 items-center justify-center rounded-2xl bg-tennis-200 ring-1 ring-inset ring-tennis-500/30">
-            <Icon name="add" size={26} weight={700} color="var(--color-ink)" />
+            <Icon name="add" size={26} weight={200} color="var(--color-ink)" />
           </div>
           <div className="flex-1">
             <p className="text-base font-bold text-ink">Add a restaurant</p>
@@ -208,7 +208,7 @@ function ShuffleCTA({ onOpen }: { onOpen: () => void }) {
         }}
         className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-paper ring-1 ring-inset ring-black/5"
       >
-        <Icon name="casino" size={26} variant="fill" weight={700} color="var(--color-ink)" />
+        <Icon name="casino" size={26} variant="fill" weight={200} color="var(--color-ink)" />
       </motion.div>
       <div className="min-w-0 flex-1">
         <p className="display-tight text-[20px] leading-tight text-ink">
@@ -222,7 +222,7 @@ function ShuffleCTA({ onOpen }: { onOpen: () => void }) {
         aria-hidden="true"
         className="flex size-9 items-center justify-center rounded-full bg-paper/70 ring-1 ring-inset ring-black/5"
       >
-        <Icon name="arrow_forward" size={20} weight={700} color="var(--color-ink)" />
+        <Icon name="arrow_forward" size={20} weight={200} color="var(--color-ink)" />
       </span>
     </button>
   );
@@ -278,7 +278,7 @@ function MapEmptyNudge() {
       className="pointer-events-none absolute inset-x-6 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2 rounded-2xl bg-paper/90 px-4 py-3 text-center backdrop-blur-md ring-1 ring-inset ring-line shadow-[0_18px_40px_-12px_oklch(0_0_0_/_0.18)]"
     >
       <div className="flex size-9 items-center justify-center rounded-full bg-tennis-300">
-        <Icon name="my_location" size={20} variant="fill" weight={600} color="var(--color-ink)" />
+        <Icon name="my_location" size={20} variant="fill" weight={200} color="var(--color-ink)" />
       </div>
       <p className="display-tight text-base text-ink">
         Your town's still fogged in.
@@ -286,7 +286,7 @@ function MapEmptyNudge() {
       <p className="max-w-[28ch] text-xs text-ink-muted">
         Tap the big{" "}
         <span className="inline-flex size-4 -translate-y-px items-center justify-center rounded-full bg-tennis-300">
-          <Icon name="add" size={12} weight={700} color="var(--color-ink)" />
+          <Icon name="add" size={12} weight={200} color="var(--color-ink)" />
         </span>{" "}
         to log your first visit. Pins unlock as you both rate.
       </p>

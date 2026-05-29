@@ -434,27 +434,19 @@ function PinByStatus({
               1
             </text>
           ) : isDivided ? (
-            <text
-              y="-2"
-              textAnchor="middle"
-              fontSize="14"
-              fontWeight="800"
+            // Lightning bolt — a "divided" verdict.
+            <path
+              transform="translate(0 -6) scale(0.62)"
+              d="M2 -9 L-4 1.5 L-0.5 1.5 L-2 9 L4.5 -2 L1 -2 Z"
               fill={ring}
-              fontFamily="DM Sans, system-ui"
-            >
-              ⚡
-            </text>
+            />
           ) : (
-            <text
-              y="-2"
-              textAnchor="middle"
-              fontSize="13"
-              fontWeight="800"
+            // Five-point star — a unanimous verdict.
+            <path
+              transform="translate(0 -6) scale(0.6)"
+              d="M0 -10 L2.94 -4.05 L9.51 -3.09 L4.76 1.55 L5.88 8.09 L0 5 L-5.88 8.09 L-4.76 1.55 L-9.51 -3.09 L-2.94 -4.05 Z"
               fill={ring}
-              fontFamily="DM Sans, system-ui"
-            >
-              ★
-            </text>
+            />
           )}
         </motion.g>
         {/* label below pin */}

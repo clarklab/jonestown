@@ -154,7 +154,7 @@ export function ShuffleModal({ open, onClose }: { open: boolean; onClose: () => 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="flex size-9 items-center justify-center rounded-2xl bg-tennis-300 ring-1 ring-inset ring-black/5">
-                <Icon name="casino" size={20} variant="fill" weight={700} color="var(--color-ink)" />
+                <Icon name="casino" size={20} variant="fill" weight={200} color="var(--color-ink)" />
               </div>
               <div>
                 <p className="text-[10px] font-bold tracking-[0.22em] text-ink-dim uppercase">
@@ -219,7 +219,7 @@ export function ShuffleModal({ open, onClose }: { open: boolean; onClose: () => 
               <Icon
                 name="shuffle"
                 size={18}
-                weight={700}
+                weight={200}
                 color="var(--color-ink)"
               />
               {phase === "landed" ? "Re-roll" : "Spinning…"}
@@ -233,7 +233,7 @@ export function ShuffleModal({ open, onClose }: { open: boolean; onClose: () => 
               <Icon
                 name="arrow_forward"
                 size={18}
-                weight={700}
+                weight={200}
                 color="var(--color-ink)"
               />
               Take me there

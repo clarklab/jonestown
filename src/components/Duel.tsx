@@ -25,7 +25,7 @@ export function VerdictBadge({
         boxShadow: cfg.shadow,
       }}
     >
-      <Icon name={cfg.icon} size={dims.icon} variant="fill" weight={700} color={cfg.fg} />
+      <Icon name={cfg.icon} size={dims.icon} variant="fill" weight={200} color={cfg.fg} />
       {cfg.label}
     </span>
   );

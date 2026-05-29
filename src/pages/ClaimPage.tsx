@@ -293,7 +293,7 @@ export function ClaimPage() {
           disabled={!canSubmit || saving}
           className="pressable mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-tennis-300 py-3.5 text-base font-bold text-ink ring-1 ring-inset ring-tennis-500/30 shadow-[0_22px_50px_-12px_oklch(0.7_0.2_120_/_0.45)] disabled:opacity-40"
         >
-          <Icon name="check" size={22} weight={700} color="var(--color-ink)" />
+          <Icon name="check" size={22} weight={200} color="var(--color-ink)" />
           {saving ? "Claiming…" : "Claim our club"}
         </button>
 

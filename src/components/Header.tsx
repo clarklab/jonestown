@@ -37,7 +37,7 @@ export function Header({
           aria-label="Back"
           className="pressable relative -ml-1 flex size-10 items-center justify-center rounded-full bg-surface ring-1 ring-inset ring-line"
         >
-          <Icon name="arrow_back" size={22} weight={600} color="var(--color-ink)" />
+          <Icon name="arrow_back" size={22} weight={200} color="var(--color-ink)" />
           <span
             className="pointer-events-none absolute inset-0 -m-2"
             aria-hidden="true"

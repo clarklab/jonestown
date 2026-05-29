@@ -153,7 +153,7 @@ export function AddVisitPage() {
             disabled={!canSave || saving}
             className="pressable relative flex items-center gap-1.5 rounded-full bg-tennis-300 px-3 py-1.5 text-sm font-bold text-ink ring-1 ring-inset ring-tennis-500/30 disabled:opacity-40"
           >
-            <Icon name="check" size={18} weight={700} color="currentColor" />
+            <Icon name="check" size={18} weight={200} color="currentColor" />
             Save
             <span className="pointer-events-none absolute inset-0 -m-2" aria-hidden="true" />
           </button>
@@ -232,7 +232,7 @@ export function AddVisitPage() {
               onClick={addDish}
               className="pressable relative flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-xs font-bold text-ink ring-1 ring-inset ring-line"
             >
-              <Icon name="add" size={18} weight={700} color="currentColor" />
+              <Icon name="add" size={18} weight={200} color="currentColor" />
               Add dish
               <span className="pointer-events-none absolute inset-0 -m-2" aria-hidden="true" />
             </button>
@@ -246,7 +246,7 @@ export function AddVisitPage() {
                 className="pressable group flex items-center gap-3 rounded-2xl bg-surface p-4 ring-1 ring-dashed ring-line"
               >
                 <div className="flex size-12 items-center justify-center rounded-2xl bg-tennis-200 ring-1 ring-inset ring-tennis-500/30">
-                  <Icon name="add" size={26} weight={700} color="var(--color-ink)" />
+                  <Icon name="add" size={26} weight={200} color="var(--color-ink)" />
                 </div>
                 <div className="flex-1 text-left">
                   <p className="text-sm font-bold text-ink">Add your first dish</p>
@@ -272,7 +272,7 @@ export function AddVisitPage() {
           disabled={!canSave || saving}
           className="pressable mt-8 flex w-full items-center justify-center gap-2 rounded-2xl bg-tennis-300 py-3.5 text-base font-bold text-ink ring-1 ring-inset ring-tennis-500/30 shadow-[0_22px_50px_-12px_oklch(0.7_0.2_120_/_0.4)] disabled:opacity-40"
         >
-          <Icon name="check" size={22} weight={700} color="var(--color-ink)" />
+          <Icon name="check" size={22} weight={200} color="var(--color-ink)" />
           {saving ? "Saving…" : "Save visit"}
         </button>
       </form>

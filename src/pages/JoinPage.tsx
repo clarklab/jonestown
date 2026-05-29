@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Icon } from "~/components/Icon";
-import { BrandTile } from "~/components/BrandMark";
+import { BrandTile, BrandMark } from "~/components/BrandMark";
 import {
   ensureSeeded,
   getCoupleBySlug,
@@ -141,10 +141,10 @@ export function JoinPage() {
           <div className="mt-2 flex flex-col gap-3 rounded-3xl bg-surface p-4 ring-1 ring-inset ring-line">
             <div className="flex items-center gap-3">
               <div
-                className="flex size-12 items-center justify-center rounded-2xl text-2xl ring-1 ring-inset ring-black/5"
+                className="flex size-12 items-center justify-center rounded-2xl ring-1 ring-inset ring-black/5"
                 style={{ background: preview.badge.color }}
               >
-                {preview.badge.emoji}
+                <BrandMark size={28} color="var(--color-ink)" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="display-tight truncate text-lg text-ink">
@@ -203,7 +203,7 @@ export function JoinPage() {
               onClick={handleJoin}
               className="pressable flex w-full items-center justify-center gap-2 rounded-2xl bg-tennis-300 py-3.5 text-base font-bold text-ink ring-1 ring-inset ring-tennis-500/30 shadow-[0_22px_50px_-12px_oklch(0.7_0.2_120_/_0.45)] disabled:opacity-40"
             >
-              <Icon name="check" size={22} weight={700} color="var(--color-ink)" />
+              <Icon name="check" size={22} weight={200} color="var(--color-ink)" />
               {busy ? "Joining…" : `Join as ${preview.members.find((m) => m.slot === me)?.name ?? ""}`}
             </button>
           </div>
