@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "./Icon";
+import { BrandTile } from "./BrandMark";
 import { CoupleBadge, UserChip } from "./UserChip";
 import { useCurrentCouple, useCurrentUser } from "~/data/hooks";
 import { memberOf, type UserId } from "~/data/types";
@@ -71,6 +72,9 @@ function BrandMark() {
     </div>
   );
 }
+
+// Re-export so other entries (landing, claim, join) can use the same shell brand.
+export { BrandTile };
 
 export function UserPicker() {
   const couple = useCurrentCouple();

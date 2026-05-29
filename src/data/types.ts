@@ -101,6 +101,12 @@ export const USERS: Record<MemberSlot, Member> = {
   b: DEFAULT_COUPLE.members[1],
 };
 
+export interface PublicRating {
+  source: "google" | "yelp" | "tripadvisor";
+  value: number; // 0..5
+  count?: number; // number of reviews, if known
+}
+
 export interface Restaurant {
   id: string;
   coupleId?: string; // set on save; legacy records may lack it
@@ -110,6 +116,8 @@ export interface Restaurant {
   area?: string;
   notes?: string;
   hidden?: boolean;
+  /** Aggregated public score from Google / Yelp / TripAdvisor — for comparison only. */
+  publicRating?: PublicRating;
   createdAt: number;
   updatedAt: number;
 }

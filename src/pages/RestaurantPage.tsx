@@ -5,6 +5,7 @@ import { Icon } from "~/components/Icon";
 import { Stars, UserStars } from "~/components/Stars";
 import { UserChip } from "~/components/UserChip";
 import { DuelScore, GapBar, VerdictBadge } from "~/components/Duel";
+import { VsPublic } from "~/components/PublicRating";
 import {
   useAggregate,
   useCurrentUser,
@@ -104,6 +105,8 @@ export function RestaurantPage() {
             <LockedNotice />
           )}
         </div>
+
+        <VsPublic verdict={verdict} publicRating={restaurant.publicRating} />
 
         <div className="mt-4">
           <button

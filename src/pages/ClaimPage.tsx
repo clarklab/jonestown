@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Icon } from "~/components/Icon";
+import { BrandTile } from "~/components/BrandMark";
 import {
   ensureSeeded,
   saveCouple,
@@ -108,9 +109,7 @@ export function ClaimPage() {
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pt-10 pb-16 safe-bottom">
       <header className="flex items-center gap-3">
-        <div className="flex size-12 items-center justify-center rounded-2xl bg-tennis-300 ring-1 ring-inset ring-black/5">
-          <span className="display-tight text-[22px] leading-none">J</span>
-        </div>
+        <BrandTile size={48} rounded={16} />
         <div>
           <p className="display-tight text-xl text-ink">Jonestown</p>
           <p className="text-[11px] font-bold tracking-[0.18em] text-ink-dim uppercase">

@@ -193,20 +193,22 @@ export async function migrateLegacyData(): Promise<void> {
 }
 
 /** Bump when the seed list changes so deployed installs pick up new entries. */
-const SEED_VERSION = 2;
+const SEED_VERSION = 3;
 
 export async function ensureSeeded(coupleId: string): Promise<void> {
   const db = await getDb();
   const isDefault = coupleId === DEFAULT_COUPLE.id;
 
-  // Versioned seed: idempotently add any restaurants that don't yet exist.
-  // Never overwrites or deletes user-edited rows.
+  // Versioned seed: idempotently add missing restaurants, AND patch in any
+  // new public-source fields (e.g. publicRating) onto already-present rows.
+  // Never overwrites or deletes user-edited fields — name, cuisine, notes
+  // etc. stay whatever the couple has set them to.
   const versionEntry = await db.get("meta", `seeded:v:${coupleId}`);
   const currentVersion = (versionEntry?.value as number | undefined) ?? 0;
   if (currentVersion < SEED_VERSION) {
     const tx = db.transaction(["restaurants", "meta"], "readwrite");
     const now = Date.now();
-    let added = false;
+    let touched = false;
     for (const r of SEED_RESTAURANTS) {
       const id = isDefault ? r.id : `${coupleId}:${r.id}`;
       const existing = await tx.objectStore("restaurants").get(id);
@@ -218,56 +220,126 @@ export async function ensureSeeded(coupleId: string): Promise<void> {
           createdAt: now,
           updatedAt: now,
         });
-        added = true;
+        touched = true;
+      } else if (
+        r.publicRating &&
+        (!existing.publicRating ||
+          existing.publicRating.source !== r.publicRating.source ||
+          existing.publicRating.value !== r.publicRating.value)
+      ) {
+        await tx.objectStore("restaurants").put({
+          ...existing,
+          publicRating: r.publicRating,
+          updatedAt: now,
+        });
+        touched = true;
       }
     }
     await tx
       .objectStore("meta")
       .put({ key: `seeded:v:${coupleId}`, value: SEED_VERSION });
     await tx.done;
-    if (added) emitChange("restaurants");
+    if (touched) emitChange("restaurants");
   }
 
   // For Jonestown TX couples (the original audience), pre-rate Bamboo Garden
-  // 4★ from both members. Their first pick, by default. Other towns get a
-  // clean slate. Idempotent per-couple via a flag.
+  // as their first pick. Other towns get a clean slate. Idempotent per-couple
+  // via flags. Successive versions update existing rows non-destructively.
   const couple = await db.get("couples", coupleId);
   const isJonestown =
     !!couple && /jonestown|78645/i.test(couple.town ?? "");
   if (isJonestown) {
-    const bambooFlag = await db.get("meta", `bamboo:${coupleId}:v1`);
-    if (!bambooFlag) {
-      const restId = isDefault ? "bamboo-garden" : `${coupleId}:bamboo-garden`;
-      const exists = await db.get("restaurants", restId);
-      if (exists) {
-        const tx = db.transaction(["visits", "meta"], "readwrite");
-        const date = Date.now() - 7 * 24 * 60 * 60 * 1000; // a week ago
+    const restId = isDefault ? "bamboo-garden" : `${coupleId}:bamboo-garden`;
+    const exists = await db.get("restaurants", restId);
+    if (exists) {
+      const bambooV2Flag = await db.get("meta", `bamboo:${coupleId}:v2`);
+      if (!bambooV2Flag) {
+        const tx = db.transaction(
+          ["visits", "dishes", "meta"],
+          "readwrite",
+        );
+        const date = Date.now() - 7 * 24 * 60 * 60 * 1000; // ~a week ago
+        const visitAId = `${coupleId}-a-bamboo`;
+        const visitBId = `${coupleId}-b-bamboo`;
+
+        // Refined notes & ratings. If v1 already created the visits we
+        // preserve their existing dates, otherwise we use `date`.
+        const existingA = await tx.objectStore("visits").get(visitAId);
+        const existingB = await tx.objectStore("visits").get(visitBId);
         await tx.objectStore("visits").put({
-          id: `${coupleId}-a-bamboo`,
+          id: visitAId,
           coupleId,
           restaurantId: restId,
           userId: "a",
-          date,
-          rating: 4,
-          notes: "Pepper steak is the move. Wok hei for days.",
-          occasion: "Friday night",
-          createdAt: date,
+          date: existingA?.date ?? date,
+          rating: 3.5,
+          notes:
+            "Phoenix chicken was good — would get again. Fried rice was mid, needs veggies.",
+          occasion: existingA?.occasion ?? "Friday night",
+          createdAt: existingA?.createdAt ?? date,
         });
         await tx.objectStore("visits").put({
-          id: `${coupleId}-b-bamboo`,
+          id: visitBId,
           coupleId,
           restaurantId: restId,
           userId: "b",
-          date: date + 1000,
-          rating: 4,
-          notes: "Generous portions. Hot and sour soup hit.",
-          createdAt: date + 1000,
+          date: existingB?.date ?? date + 1000,
+          rating: 3,
+          notes:
+            "Sweet & sour chicken — wanted more pineapple. Fried rice mid, needs veggies.",
+          createdAt: existingB?.createdAt ?? date + 1000,
         });
+
+        // Phoenix chicken dish (Clark's pick)
+        await tx.objectStore("dishes").put({
+          id: `${coupleId}-a-bamboo-phoenix`,
+          coupleId,
+          visitId: visitAId,
+          restaurantId: restId,
+          userId: "a",
+          name: "Phoenix Chicken",
+          rating: 4,
+          notes: "Would get again.",
+          createdAt: date,
+        });
+
+        // Sweet & sour chicken dish (Angie's pick)
+        await tx.objectStore("dishes").put({
+          id: `${coupleId}-b-bamboo-sweetsour`,
+          coupleId,
+          visitId: visitBId,
+          restaurantId: restId,
+          userId: "b",
+          name: "Sweet & Sour Chicken",
+          rating: 3,
+          notes: "Wanted more pineapple.",
+          createdAt: date + 500,
+        });
+
+        // The shared fried-rice complaint, logged once on Clark's visit so
+        // the dish appears on the restaurant page.
+        await tx.objectStore("dishes").put({
+          id: `${coupleId}-a-bamboo-friedrice`,
+          coupleId,
+          visitId: visitAId,
+          restaurantId: restId,
+          userId: "a",
+          name: "Fried Rice",
+          rating: 2.5,
+          notes: "Mid. Needs veggies.",
+          createdAt: date + 200,
+        });
+
+        // Mark both v1 and v2 done so future bumps don't re-run anything.
         await tx
           .objectStore("meta")
           .put({ key: `bamboo:${coupleId}:v1`, value: true });
+        await tx
+          .objectStore("meta")
+          .put({ key: `bamboo:${coupleId}:v2`, value: true });
         await tx.done;
         emitChange("visits");
+        emitChange("dishes");
       }
     }
   }

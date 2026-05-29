@@ -136,12 +136,12 @@ function PageFrame({ children }: { children: React.ReactNode }) {
   );
 }
 
+import { BrandTile } from "./components/BrandMark";
+
 function SplashScreen() {
   return (
     <div className="flex min-h-dvh items-center justify-center bg-paper">
-      <div className="flex size-12 items-center justify-center rounded-2xl bg-tennis-300 ring-1 ring-inset ring-black/5">
-        <span className="display-tight text-[22px] leading-none">J</span>
-      </div>
+      <BrandTile size={56} rounded={18} />
     </div>
   );
 }

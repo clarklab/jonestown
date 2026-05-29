@@ -4,6 +4,7 @@ import { usePhotoUrl } from "~/data/hooks";
 import type { RestaurantAggregate } from "~/data/types";
 import { DuelInline, VerdictBadge } from "./Duel";
 import { Icon } from "./Icon";
+import { PublicRatingChip } from "./PublicRating";
 import { formatRelativeDate } from "~/utils/format";
 
 export function RestaurantCard({ agg }: { agg: RestaurantAggregate }) {
@@ -48,13 +49,20 @@ export function RestaurantCard({ agg }: { agg: RestaurantAggregate }) {
             </h3>
             <VerdictBadge verdict={verdict} size="sm" />
           </div>
-          {restaurant.cuisine || restaurant.area ? (
-            <p className="mt-0.5 truncate text-xs text-ink-dim">
-              {[restaurant.cuisine, restaurant.area]
-                .filter(Boolean)
-                .join(" · ")}
-            </p>
-          ) : null}
+          <div className="mt-0.5 flex items-center justify-between gap-2">
+            {restaurant.cuisine || restaurant.area ? (
+              <p className="truncate text-xs text-ink-dim">
+                {[restaurant.cuisine, restaurant.area]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            ) : (
+              <span />
+            )}
+            {restaurant.publicRating ? (
+              <PublicRatingChip rating={restaurant.publicRating} size="sm" />
+            ) : null}
+          </div>
 
           <div className="mt-auto flex items-end justify-between gap-2 pt-2">
             <DuelInline verdict={verdict} />

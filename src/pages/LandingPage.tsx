@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Icon } from "~/components/Icon";
+import { BrandTile } from "~/components/BrandMark";
 
 export function LandingPage() {
   return (
@@ -8,9 +9,7 @@ export function LandingPage() {
       <Splash />
 
       <header className="relative flex items-center gap-3">
-        <div className="flex size-12 items-center justify-center rounded-2xl bg-tennis-300 ring-1 ring-inset ring-black/5 shadow-sm">
-          <span className="display-tight text-[22px] leading-none">J</span>
-        </div>
+        <BrandTile size={48} rounded={16} />
         <div>
           <p className="display-tight text-xl text-ink">Jonestown</p>
           <p className="text-[11px] font-bold tracking-[0.18em] text-ink-dim uppercase">
