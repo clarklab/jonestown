@@ -5,6 +5,7 @@ import { Header } from "~/components/Header";
 import { Icon } from "~/components/Icon";
 import { CoupleBadge } from "~/components/UserChip";
 import { RestaurantCard } from "~/components/RestaurantCard";
+import { ShuffleModal } from "~/components/ShuffleModal";
 import { TownMap } from "~/components/TownMap";
 import { useAggregates, useCurrentCouple } from "~/data/hooks";
 import type { RestaurantAggregate, VerdictStatus } from "~/data/types";
@@ -33,6 +34,7 @@ export function HomePage() {
   const aggs = useAggregates();
   const [sort, setSort] = useState<SortKey>("all");
   const [query, setQuery] = useState("");
+  const [shuffleOpen, setShuffleOpen] = useState(false);
   const [view, setView] = useState<"map" | "list">("map");
 
   const filtered = useMemo(() => {
@@ -114,6 +116,8 @@ export function HomePage() {
           solo={aggs.list.filter((a) => a.verdict.status === "solo").length}
           total={aggs.totalCount}
         />
+
+        <ShuffleCTA onOpen={() => setShuffleOpen(true)} />
       </section>
 
       {/* Search + filter */}
@@ -177,7 +181,50 @@ export function HomePage() {
           </div>
         </Link>
       </section>
+
+      <ShuffleModal
+        open={shuffleOpen}
+        onClose={() => setShuffleOpen(false)}
+      />
     </div>
+  );
+}
+
+function ShuffleCTA({ onOpen }: { onOpen: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="pressable group relative mt-3 flex w-full items-center gap-3 overflow-hidden rounded-3xl bg-tennis-300 p-4 text-left ring-1 ring-inset ring-tennis-500/30 shadow-[0_22px_50px_-20px_oklch(0.7_0.2_120_/_0.45)]"
+    >
+      <motion.div
+        aria-hidden="true"
+        animate={{ rotate: [0, -8, 8, -4, 4, 0] }}
+        transition={{
+          duration: 1.6,
+          ease: "easeInOut",
+          repeat: Infinity,
+          repeatDelay: 3.5,
+        }}
+        className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-paper ring-1 ring-inset ring-black/5"
+      >
+        <Icon name="casino" size={26} variant="fill" weight={700} color="var(--color-ink)" />
+      </motion.div>
+      <div className="min-w-0 flex-1">
+        <p className="display-tight text-[20px] leading-tight text-ink">
+          Can't pick? Roll for it.
+        </p>
+        <p className="text-xs font-medium text-ink/70">
+          We'll spin a spot you haven't tried yet.
+        </p>
+      </div>
+      <span
+        aria-hidden="true"
+        className="flex size-9 items-center justify-center rounded-full bg-paper/70 ring-1 ring-inset ring-black/5"
+      >
+        <Icon name="arrow_forward" size={20} weight={700} color="var(--color-ink)" />
+      </span>
+    </button>
   );
 }
 
