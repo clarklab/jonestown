@@ -410,6 +410,53 @@ export async function setCurrentCoupleId(id: string | null): Promise<void> {
   emitChange("couples");
 }
 
+// ---- PIN gate (Clark + Angie only) ----
+//
+// Jonestown is a two-person app. Instead of the multi-couple onboarding
+// flow, entry is gated by a shared PIN. Once a device has entered it the
+// unlock is remembered in localStorage so we launch straight in next time.
+
+const PIN_KEY = "jonestown:unlocked";
+
+/** The shared PIN for the two of us. */
+export const APP_PIN = "1985";
+
+export function isUnlocked(): boolean {
+  try {
+    return localStorage.getItem(PIN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function setUnlocked(value: boolean): void {
+  try {
+    if (value) localStorage.setItem(PIN_KEY, "1");
+    else localStorage.removeItem(PIN_KEY);
+  } catch {
+    // localStorage unavailable (private mode etc.) — gate falls back to
+    // asking for the PIN each load, which is acceptable.
+  }
+}
+
+/**
+ * Make sure the one-and-only Jonestown couple (Clark + Angie) exists, is
+ * selected as current, and is seeded. Runs on unlock and on every launch
+ * of an already-unlocked device. Idempotent.
+ */
+export async function bootstrapDefaultCouple(): Promise<void> {
+  const existing = await getCouple(DEFAULT_COUPLE.id);
+  if (!existing) {
+    const now = Date.now();
+    await saveCouple({ ...DEFAULT_COUPLE, createdAt: now, updatedAt: now });
+  }
+  const currentId = await getCurrentCoupleId();
+  if (currentId !== DEFAULT_COUPLE.id) {
+    await setCurrentCoupleId(DEFAULT_COUPLE.id);
+  }
+  await ensureSeeded(DEFAULT_COUPLE.id);
+}
+
 // ---- Restaurants ----
 
 export async function listRestaurants(

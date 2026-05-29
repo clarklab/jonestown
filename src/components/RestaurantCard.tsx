@@ -36,8 +36,11 @@ export function RestaurantCard({ agg }: { agg: RestaurantAggregate }) {
             <PlaceholderArt seed={restaurant.id} name={restaurant.name} />
           )}
           {isLocked ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-surface/85 backdrop-blur-md">
-              <Icon name="lock" size={26} variant="fill" color="var(--color-ink-faint)" />
+            // Match the parent's radius directly: a backdrop-filter layer
+            // ignores an ancestor's `overflow-hidden` rounding in WebKit, so
+            // without this the blur square pokes past the rounded corners.
+            <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-surface/85 backdrop-blur-md">
+              <Icon name="lock" size={24} variant="fill" color="var(--color-ink-faint)" />
             </div>
           ) : null}
         </div>

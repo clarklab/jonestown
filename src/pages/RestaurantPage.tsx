@@ -115,7 +115,7 @@ export function RestaurantPage() {
             onClick={() => navigate(`/r/${restaurant.id}/visit`)}
             className="pressable flex w-full items-center justify-center gap-2 rounded-2xl bg-tennis-300 py-3.5 text-base font-bold text-ink ring-1 ring-inset ring-tennis-500/30 shadow-[0_18px_40px_-12px_oklch(0.7_0.2_120_/_0.45)]"
           >
-            <Icon name="add" size={22} weight={700} color="var(--color-ink)" />
+            <Icon name="add" size={22} weight={200} color="var(--color-ink)" />
             {missingUser === currentUser
               ? `Be the second fork`
               : agg.visitCountByUser[currentUser] > 0

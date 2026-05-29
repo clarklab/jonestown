@@ -1,5 +1,6 @@
 import { useCurrentCouple } from "~/data/hooks";
 import { memberOf, type UserId } from "~/data/types";
+import { BrandMark } from "./BrandMark";
 
 const SIZES = {
   xs: { box: "size-5", text: "text-[10px]" },
@@ -79,34 +80,34 @@ export function DuelAvatars({
   );
 }
 
-/** Couple-wide badge: the emoji + accent color set during onboarding. */
+/**
+ * Couple-wide badge: the two-fork brand mark on the couple's accent tile.
+ * (We dropped the emoji badge — Jonestown is a single fixed couple now and
+ * the brand mark keeps the identity consistent and emoji-free.)
+ */
 export function CoupleBadge({
   size = "md",
 }: {
   size?: "sm" | "md" | "lg" | "xl";
 }) {
   const couple = useCurrentCouple();
-  const sizes = {
-    sm: { box: "size-7", text: "text-base" },
-    md: { box: "size-9", text: "text-lg" },
-    lg: { box: "size-12", text: "text-2xl" },
-    xl: { box: "size-16", text: "text-3xl" },
-  }[size];
+  const px = { sm: 28, md: 36, lg: 48, xl: 64 }[size];
+  const box = { sm: "size-7", md: "size-9", lg: "size-12", xl: "size-16" }[size];
   if (!couple) {
     return (
       <div
-        className={`${sizes.box} rounded-[24%] bg-tennis-300`}
+        className={`${box} rounded-[24%] bg-tennis-300`}
         aria-hidden="true"
       />
     );
   }
   return (
     <div
-      className={`${sizes.box} relative flex items-center justify-center rounded-[24%] ring-1 ring-inset ring-black/5`}
+      className={`${box} relative flex items-center justify-center rounded-[24%] ring-1 ring-inset ring-black/5`}
       style={{ background: couple.badge.color }}
       aria-label={couple.name}
     >
-      <span className={sizes.text}>{couple.badge.emoji}</span>
+      <BrandMark size={Math.round(px * 0.6)} color="var(--color-ink)" />
     </div>
   );
 }

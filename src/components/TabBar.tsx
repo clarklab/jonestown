@@ -32,7 +32,7 @@ export function TabBar() {
               transition={{ type: "spring", stiffness: 400, damping: 24 }}
               className="flex items-center justify-center"
             >
-              <Icon name="add" size={32} weight={700} color="var(--color-ink)" />
+              <Icon name="add" size={32} weight={200} color="var(--color-ink)" />
             </motion.span>
             <span
               className="pointer-events-none absolute inset-0 -m-2 rounded-full"
@@ -65,7 +65,7 @@ function TabItem({ tab }: { tab: (typeof tabs)[number] }) {
               name={tab.icon}
               size={26}
               variant={isActive ? "fill" : "outline"}
-              weight={isActive ? 600 : 400}
+              weight={200}
               color="currentColor"
             />
             {isActive ? (

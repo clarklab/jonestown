@@ -1,12 +1,6 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  Navigate,
-  Route,
-  Routes,
-  useLocation,
-  useNavigate,
-} from "react-router-dom";
+import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { TabBar } from "./components/TabBar";
 import { HomePage } from "./pages/HomePage";
 import { RestaurantPage } from "./pages/RestaurantPage";
@@ -18,30 +12,9 @@ import { AddDishPage } from "./pages/AddDishPage";
 import { ClaimPage } from "./pages/ClaimPage";
 import { JoinPage } from "./pages/JoinPage";
 import { LandingPage } from "./pages/LandingPage";
-import { getCurrentCoupleId, onChange } from "./data/db";
+import { bootstrapDefaultCouple, isUnlocked, setUnlocked } from "./data/db";
 
-type CoupleStatus = "loading" | "missing" | "present";
-
-function useCoupleStatus(): CoupleStatus {
-  const [status, setStatus] = useState<CoupleStatus>("loading");
-  useEffect(() => {
-    let alive = true;
-    const check = async () => {
-      const id = await getCurrentCoupleId();
-      if (!alive) return;
-      setStatus(id ? "present" : "missing");
-    };
-    check();
-    const off = onChange((table) => {
-      if (table === "couples" || table === "meta") check();
-    });
-    return () => {
-      alive = false;
-      off();
-    };
-  }, []);
-  return status;
-}
+type Gate = "loading" | "locked" | "open";
 
 /**
  * Scroll the window back to the top on every pathname change. Without this
@@ -60,43 +33,50 @@ function useScrollResetOnRoute() {
 
 export function App() {
   const location = useLocation();
-  const status = useCoupleStatus();
   const navigate = useNavigate();
   useScrollResetOnRoute();
 
-  // Redirect into onboarding when no couple is selected (except on the
-  // claim/join/landing routes themselves).
-  useEffect(() => {
-    if (status !== "missing") return;
-    const allow = ["/", "/claim", "/join"];
-    if (!allow.includes(location.pathname)) {
-      navigate("/", { replace: true });
-    }
-  }, [status, location.pathname, navigate]);
+  const [gate, setGate] = useState<Gate>("loading");
 
-  if (status === "loading") {
+  // Entry is gated by the shared PIN. If this device has already unlocked,
+  // bootstrap our couple and launch straight in.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (isUnlocked()) {
+        await bootstrapDefaultCouple();
+        if (alive) setGate("open");
+      } else if (alive) {
+        setGate("locked");
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const handleUnlock = async () => {
+    setUnlocked(true);
+    await bootstrapDefaultCouple();
+    setGate("open");
+    navigate("/", { replace: true });
+  };
+
+  if (gate === "loading") {
     return <SplashScreen />;
   }
 
-  // No couple yet — landing flow without tab bar.
-  if (status === "missing") {
+  // Locked — the marketing + PIN landing. No tab bar, no router; the whole
+  // app sits behind this gate.
+  if (gate === "locked") {
     return (
       <div className="relative flex min-h-dvh flex-col bg-paper text-ink">
-        <AnimatePresence mode="wait" initial={false}>
-          <PageFrame key={location.pathname}>
-            <Routes location={location}>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/claim" element={<ClaimPage />} />
-              <Route path="/join" element={<JoinPage />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </PageFrame>
-        </AnimatePresence>
+        <LandingPage onUnlock={handleUnlock} />
       </div>
     );
   }
 
-  // Couple is set — full app.
+  // Unlocked — full app.
   return (
     <div className="relative flex min-h-dvh flex-col bg-paper text-ink">
       <main className="flex-1 pb-32">

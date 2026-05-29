@@ -64,13 +64,13 @@ export function VsPublic({
     callout = "No verdict from you yet — public says here's what to expect.";
     tone = "match";
   } else if (absDelta <= 0.25) {
-    callout = `Same as the crowd — within ¼ ★.`;
+    callout = `Same as the crowd — within a quarter star.`;
     tone = "match";
   } else if (delta > 0) {
-    callout = `${absDelta.toFixed(1)} ★ louder than the crowd.`;
+    callout = `${absDelta.toFixed(1)} stars louder than the crowd.`;
     tone = "louder";
   } else {
-    callout = `${absDelta.toFixed(1)} ★ tougher than the crowd.`;
+    callout = `${absDelta.toFixed(1)} stars tougher than the crowd.`;
     tone = "tougher";
   }
 

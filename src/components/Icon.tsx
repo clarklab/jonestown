@@ -6,6 +6,10 @@ interface IconProps {
   name: string;
   size?: number; // px, used as both font-size and width/height
   variant?: Variant;
+  /**
+   * Material Symbols stroke weight. We standardize on the light 200 grade
+   * across the app for a refined, airy icon language.
+   */
   weight?: 100 | 200 | 300 | 400 | 500 | 600 | 700;
   className?: string;
   color?: string;
@@ -21,7 +25,7 @@ export function Icon({
   name,
   size = 24,
   variant = "outline",
-  weight = 500,
+  weight = 200,
   className = "",
   color,
   style,
