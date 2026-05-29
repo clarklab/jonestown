@@ -192,27 +192,40 @@ export async function migrateLegacyData(): Promise<void> {
   await db.put("meta", { key: "migrated:v2", value: true });
 }
 
+/** Bump when the seed list changes so deployed installs pick up new entries. */
+const SEED_VERSION = 2;
+
 export async function ensureSeeded(coupleId: string): Promise<void> {
   const db = await getDb();
-  const seedKey = `seeded:${coupleId}`;
-  const seededFlag = await db.get("meta", seedKey);
   const isDefault = coupleId === DEFAULT_COUPLE.id;
-  if (!seededFlag) {
+
+  // Versioned seed: idempotently add any restaurants that don't yet exist.
+  // Never overwrites or deletes user-edited rows.
+  const versionEntry = await db.get("meta", `seeded:v:${coupleId}`);
+  const currentVersion = (versionEntry?.value as number | undefined) ?? 0;
+  if (currentVersion < SEED_VERSION) {
     const tx = db.transaction(["restaurants", "meta"], "readwrite");
     const now = Date.now();
+    let added = false;
     for (const r of SEED_RESTAURANTS) {
       const id = isDefault ? r.id : `${coupleId}:${r.id}`;
-      await tx.objectStore("restaurants").put({
-        ...r,
-        id,
-        coupleId,
-        createdAt: now,
-        updatedAt: now,
-      });
+      const existing = await tx.objectStore("restaurants").get(id);
+      if (!existing) {
+        await tx.objectStore("restaurants").put({
+          ...r,
+          id,
+          coupleId,
+          createdAt: now,
+          updatedAt: now,
+        });
+        added = true;
+      }
     }
-    await tx.objectStore("meta").put({ key: seedKey, value: true });
+    await tx
+      .objectStore("meta")
+      .put({ key: `seeded:v:${coupleId}`, value: SEED_VERSION });
     await tx.done;
-    emitChange("restaurants");
+    if (added) emitChange("restaurants");
   }
 
   // For Jonestown TX couples (the original audience), pre-rate Bamboo Garden

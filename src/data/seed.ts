@@ -1,12 +1,17 @@
 import type { Restaurant } from "./types";
 
 /**
- * Starter list of restaurants in and around Jonestown, TX 78645 (Lake Travis).
- * Edit / add / remove from the app — this just gives Clark & Angie a head start.
+ * Curated list of restaurants in and around Jonestown, TX 78645 — pulled
+ * from public listings (TripAdvisor, Yelp, the town's own listings) and
+ * cross-checked. The shared seed for every Jonestown-area couple.
+ *
+ * Couples can hide / edit / add freely from inside the app; this list is
+ * just a head start so the map isn't empty on day one.
  */
 export const SEED_RESTAURANTS: Array<
   Pick<Restaurant, "id" | "name" | "cuisine" | "area" | "address" | "notes">
 > = [
+  // ---- Jonestown proper ----
   {
     id: "bamboo-garden",
     name: "Bamboo Garden Wok 'N' Grill",
@@ -15,129 +20,156 @@ export const SEED_RESTAURANTS: Array<
     notes: "Our first pick.",
   },
   {
-    id: "reeds-jazz",
-    name: "Reed's Jazz & Supper Club",
-    cuisine: "American · Steak",
-    area: "Lago Vista",
-    address: "5973 Lohmans Crossing Rd",
-    notes: "Live music nights. Datey.",
-  },
-  {
-    id: "hideaway-kitchen",
-    name: "The Hideaway Kitchen & Bar",
-    cuisine: "American · Pub",
-    area: "Lago Vista",
-  },
-  {
-    id: "lakeside-pizza",
-    name: "Lakeside Pizza",
-    cuisine: "Pizza",
+    id: "lucky-rabbit",
+    name: "The Lucky Rabbit",
+    cuisine: "Bar · Burgers · Live Music",
     area: "Jonestown",
+    address: "18626 Ranch Rd 1431, Jonestown, TX 78645",
+    notes: "Rustic Texas, handcrafted cocktails, frozen margs.",
   },
   {
-    id: "bartletts",
-    name: "Bartlett's",
-    cuisine: "American",
-    area: "Lago Vista",
-  },
-  {
-    id: "the-cottage-cafe",
-    name: "The Cottage Café",
-    cuisine: "Breakfast · Diner",
-    area: "Jonestown",
-    notes: "Morning rotation.",
-  },
-  {
-    id: "casa-chapala",
-    name: "Casa Chapala",
+    id: "bajo-la-luna",
+    name: "Bajo La Luna",
     cuisine: "Tex-Mex",
-    area: "Lago Vista",
+    area: "Jonestown",
+    address: "18608 FM 1431, Jonestown, TX 78645",
+    notes: "Fajitas, enchiladas, tacos, nachos.",
   },
   {
-    id: "twin-pines-bbq",
-    name: "Twin Pines BBQ",
-    cuisine: "BBQ",
+    id: "quetzal-texmex",
+    name: "Quetzal TexMex",
+    cuisine: "Tex-Mex",
     area: "Jonestown",
   },
   {
-    id: "lone-star-pizza",
-    name: "Lone Star Pizza",
+    id: "la-chaparrita",
+    name: "La Chaparrita",
+    cuisine: "Mexican",
+    area: "Jonestown",
+  },
+  {
+    id: "the-cedar-tree",
+    name: "The Cedar Tree",
+    cuisine: "Mediterranean · Café",
+    area: "Jonestown",
+  },
+  {
+    id: "farmands-kitchen",
+    name: "Farmand's Kitchen",
+    cuisine: "American",
+    area: "Jonestown",
+  },
+  {
+    id: "the-burger-bar",
+    name: "The Burger Bar",
+    cuisine: "Burgers",
+    area: "Jonestown",
+  },
+  {
+    id: "floating-tavern",
+    name: "Floating Tavern",
+    cuisine: "Bar · American",
+    area: "Jonestown",
+  },
+  {
+    id: "the-lighthouse",
+    name: "The Lighthouse Restaurant & Lounge",
+    cuisine: "American · Lounge",
+    area: "Jonestown",
+  },
+  {
+    id: "wild-hare-bar-grill",
+    name: "Wild Hare Bar & Grill",
+    cuisine: "Bar · Grill",
+    area: "Jonestown",
+    address: "7301 Maritime Pass, Jonestown, TX 78645",
+  },
+  {
+    id: "cup-of-jonestown",
+    name: "Cup of Jonestown",
+    cuisine: "Coffee · Café · Breakfast",
+    area: "Jonestown",
+    notes: "Breakfast tacos, baked goods.",
+  },
+  {
+    id: "scratch-brew-cafe",
+    name: "Scratch Brew Cafe",
+    cuisine: "Coffee · Brunch",
+    area: "Jonestown",
+  },
+  {
+    id: "alba-wine-bar",
+    name: "Alba Wine Bar",
+    cuisine: "Wine Bar · French",
+    area: "Jonestown",
+  },
+  {
+    id: "rounders-pizzeria",
+    name: "Rounders Pizzeria",
     cuisine: "Pizza",
     area: "Jonestown",
+    notes: "Lakeside.",
   },
   {
-    id: "lake-travis-tavern",
-    name: "Lake Travis Tavern",
-    cuisine: "Bar · Pub",
-    area: "Jonestown",
-    notes: "Sports + burgers.",
-  },
-  {
-    id: "ranch-house-bbq",
-    name: "Ranch House BBQ",
-    cuisine: "BBQ",
-    area: "Lago Vista",
-  },
-  {
-    id: "china-wok-78645",
-    name: "China Wok",
-    cuisine: "Chinese",
+    id: "dominos-jonestown",
+    name: "Domino's Pizza",
+    cuisine: "Pizza · Chain",
     area: "Jonestown",
   },
+
+  // ---- Lago Vista (also 78645) ----
   {
-    id: "subway-jonestown",
-    name: "Subway",
-    cuisine: "Sandwiches",
-    area: "Jonestown",
-  },
-  {
-    id: "sonic-jonestown",
-    name: "Sonic Drive-In",
-    cuisine: "Fast food",
-    area: "Lago Vista",
-  },
-  {
-    id: "dominos-78645",
-    name: "Domino's",
-    cuisine: "Pizza",
-    area: "Lago Vista",
-  },
-  {
-    id: "mamas-cafe",
-    name: "Mama's Café",
-    cuisine: "Breakfast · Diner",
-    area: "Jonestown",
-  },
-  {
-    id: "vista-grill",
-    name: "Vista Grill",
+    id: "bella-vista-lv",
+    name: "Bella Vista",
     cuisine: "American",
     area: "Lago Vista",
   },
   {
-    id: "captains-lakeside",
-    name: "Captain's Lakeside",
-    cuisine: "Seafood · American",
-    area: "Lake Travis",
-    notes: "Lakeside seating — go before sundown.",
+    id: "copperhead-grille",
+    name: "Copperhead Grille",
+    cuisine: "Burgers · Bar",
+    area: "Lago Vista",
+    notes: "Best burger in town, year-round patio.",
   },
   {
-    id: "the-boat-yard",
-    name: "The Boat Yard",
+    id: "brocs-italian-market",
+    name: "Broc's Italian Market",
+    cuisine: "Italian",
+    area: "Lago Vista",
+    notes: "Family-owned. Lasagna, spinach ravioli, homemade meatballs.",
+  },
+  {
+    id: "island-bar-grill",
+    name: "The Island Bar & Grill",
     cuisine: "American · Bar",
-    area: "Lake Travis",
+    area: "Lago Vista",
+    address: "3404 American Drive, Lago Vista, TX 78645",
+    notes: "Lake views.",
   },
   {
-    id: "lone-rider-coffee",
-    name: "Lone Rider Coffee",
-    cuisine: "Coffee · Pastries",
-    area: "Jonestown",
-    notes: "Quick stop.",
+    id: "bunker-bar-grille",
+    name: "The Bunker Bar and Grille",
+    cuisine: "Bar · Grill",
+    area: "Lago Vista",
   },
   {
-    id: "el-rancho-taqueria",
-    name: "El Rancho Taquería",
-    cuisine: "Mexican · Tacos",
-    area: "Jonestown",
+    id: "jj-bbq-burgers",
+    name: "J&J Barbeque & Burgers",
+    cuisine: "BBQ · Burgers",
+    area: "Lago Vista",
+    notes: "Inside a gas station. Pit-smoked brisket, sausage, chicken, ribs.",
+  },
+  {
+    id: "casa-mexico-truck",
+    name: "Casa Mexico",
+    cuisine: "Mexican · Food Truck",
+    area: "Lago Vista",
+    notes: "Cheap, generous, homemade salsas.",
+  },
+  {
+    id: "taqueria-lago-vista",
+    name: "Taquería Lago Vista",
+    cuisine: "Tacos · Mexican",
+    area: "Lago Vista",
   },
 ];

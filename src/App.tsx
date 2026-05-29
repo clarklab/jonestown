@@ -43,10 +43,26 @@ function useCoupleStatus(): CoupleStatus {
   return status;
 }
 
+/**
+ * Scroll the window back to the top on every pathname change. Without this
+ * the user lands mid-page when navigating between, say, a long restaurant
+ * list and a restaurant detail.
+ */
+function useScrollResetOnRoute() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    // Run after paint so the new page has actually mounted.
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+    });
+  }, [pathname]);
+}
+
 export function App() {
   const location = useLocation();
   const status = useCoupleStatus();
   const navigate = useNavigate();
+  useScrollResetOnRoute();
 
   // Redirect into onboarding when no couple is selected (except on the
   // claim/join/landing routes themselves).
@@ -66,20 +82,15 @@ export function App() {
   if (status === "missing") {
     return (
       <div className="relative flex min-h-dvh flex-col bg-paper text-ink">
-        <AnimatePresence initial={false}>
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-          >
+        <AnimatePresence mode="wait" initial={false}>
+          <PageFrame key={location.pathname}>
             <Routes location={location}>
               <Route path="/" element={<LandingPage />} />
               <Route path="/claim" element={<ClaimPage />} />
               <Route path="/join" element={<JoinPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-          </motion.div>
+          </PageFrame>
         </AnimatePresence>
       </div>
     );
@@ -89,13 +100,8 @@ export function App() {
   return (
     <div className="relative flex min-h-dvh flex-col bg-paper text-ink">
       <main className="flex-1 pb-32">
-        <AnimatePresence initial={false}>
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-          >
+        <AnimatePresence mode="wait" initial={false}>
+          <PageFrame key={location.pathname}>
             <Routes location={location}>
               <Route path="/" element={<HomePage />} />
               <Route path="/r/:id" element={<RestaurantPage />} />
@@ -109,11 +115,24 @@ export function App() {
               <Route path="/join" element={<JoinPage />} />
               <Route path="*" element={<HomePage />} />
             </Routes>
-          </motion.div>
+          </PageFrame>
         </AnimatePresence>
       </main>
       <TabBar />
     </div>
+  );
+}
+
+function PageFrame({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -4 }}
+      transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+    >
+      {children}
+    </motion.div>
   );
 }
 
