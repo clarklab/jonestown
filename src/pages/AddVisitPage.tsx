@@ -5,6 +5,7 @@ import { Header } from "~/components/Header";
 import { Icon } from "~/components/Icon";
 import { StarInput } from "~/components/Stars";
 import { CompactPhotoButton } from "~/components/PhotoCapture";
+import { useToast } from "~/components/Toast";
 import { UserChip } from "~/components/UserChip";
 import {
   useCurrentCouple,
@@ -29,6 +30,7 @@ export function AddVisitPage() {
   const navigate = useNavigate();
   const couple = useCurrentCouple();
   const [user] = useCurrentUser();
+  const toast = useToast();
 
   const [restaurantId, setRestaurantId] = useState<string | null>(
     restaurantIdParam ?? null,
@@ -107,6 +109,13 @@ export function AddVisitPage() {
         createdAt: now,
       });
     }
+    const savedDishes = dishes.filter((d) => d.name.trim()).length;
+    toast.show(
+      savedDishes > 0
+        ? `Visit logged · ${savedDishes} dish${savedDishes === 1 ? "" : "es"}`
+        : "Visit logged",
+      { icon: "check_circle" },
+    );
     navigate(`/r/${restaurantId}`);
   };
 

@@ -2,10 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "~/components/Header";
 import { Icon } from "~/components/Icon";
+import { useToast } from "~/components/Toast";
 import { saveRestaurant } from "~/data/db";
 
 export function AddRestaurantPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [name, setName] = useState("");
   const [cuisine, setCuisine] = useState("");
   const [area, setArea] = useState("");
@@ -20,14 +22,16 @@ export function AddRestaurantPage() {
     if (!canSave) return;
     setSaving(true);
     const id = slugify(name) + "-" + Math.random().toString(36).slice(2, 6);
+    const restName = name.trim();
     await saveRestaurant({
       id,
-      name: name.trim(),
+      name: restName,
       cuisine: cuisine.trim() || undefined,
       area: area.trim() || undefined,
       address: address.trim() || undefined,
       notes: notes.trim() || undefined,
     });
+    toast.show(`${restName} added to the map`, { icon: "add_location" });
     navigate(`/r/${id}`);
   };
 

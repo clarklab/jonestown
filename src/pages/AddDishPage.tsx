@@ -4,6 +4,7 @@ import { Header } from "~/components/Header";
 import { Icon } from "~/components/Icon";
 import { Stars, StarInput } from "~/components/Stars";
 import { PhotoCapture } from "~/components/PhotoCapture";
+import { useToast } from "~/components/Toast";
 import { UserChip } from "~/components/UserChip";
 import { useCurrentCouple, useCurrentUser, useDishes } from "~/data/hooks";
 import { deleteDish, saveDish, savePhoto } from "~/data/db";
@@ -19,6 +20,7 @@ export function AddDishPage() {
   const navigate = useNavigate();
   const couple = useCurrentCouple();
   const [user] = useCurrentUser();
+  const toast = useToast();
   const existingDishes = useDishes({ visitId });
   const [visit, setVisit] = useState<Visit | null>(null);
 
@@ -47,13 +49,14 @@ export function AddDishPage() {
     setSaving(true);
     let photoId: string | undefined;
     if (photoBlob) photoId = await savePhoto(photoBlob, couple.id);
+    const dishName = name.trim();
     await saveDish({
       id: crypto.randomUUID(),
       coupleId: couple.id,
       visitId,
       restaurantId,
       userId: user,
-      name: name.trim(),
+      name: dishName,
       rating,
       notes: notes.trim() || undefined,
       photoId,
@@ -64,6 +67,7 @@ export function AddDishPage() {
     setNotes("");
     setPhotoBlob(null);
     setSaving(false);
+    toast.show(`${dishName} added`, { icon: "restaurant" });
   };
 
   return (

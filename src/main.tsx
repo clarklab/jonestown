@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
+import { ToastProvider } from "./components/Toast";
 import { ensureSeeded, getCurrentCoupleId, migrateLegacyData } from "./data/db";
 import { startSync } from "./data/sync";
 import "./styles.css";
@@ -18,7 +19,9 @@ void (async () => {
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <App />
+      <ToastProvider>
+        <App />
+      </ToastProvider>
     </BrowserRouter>
   </React.StrictMode>,
 );
