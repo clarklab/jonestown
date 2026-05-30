@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { Header } from "~/components/Header";
 import { Icon } from "~/components/Icon";
 import { VerdictPill } from "~/components/PassFail";
@@ -216,8 +217,8 @@ export function ProfilePage() {
             label="Switch user"
             description="Toggle between the two of you above."
           />
-          <a
-            href="/admin"
+          <Link
+            to="/admin"
             className="pressable flex items-center gap-3 rounded-2xl bg-surface p-3 text-left ring-1 ring-inset ring-line"
           >
             <span className="flex size-10 items-center justify-center rounded-xl bg-tennis-200 ring-1 ring-inset ring-tennis-500/30">
@@ -232,7 +233,7 @@ export function ProfilePage() {
               </span>
             </span>
             <Icon name="chevron_right" size={22} color="var(--color-ink-faint)" />
-          </a>
+          </Link>
           <button
             type="button"
             onClick={handleExport}
