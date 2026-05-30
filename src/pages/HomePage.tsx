@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Header } from "~/components/Header";
 import { Icon } from "~/components/Icon";
-import { CoupleBadge } from "~/components/UserChip";
 import { RestaurantCard } from "~/components/RestaurantCard";
 import { ShuffleModal } from "~/components/ShuffleModal";
 import { TownMap } from "~/components/TownMap";
@@ -67,12 +66,6 @@ export function HomePage() {
               unlocked={aggs.bothRatedCount}
               total={aggs.totalCount}
             />
-            <div className="ml-auto flex items-center gap-1.5 rounded-full bg-paper/85 py-1 pr-2.5 pl-1 backdrop-blur-md ring-1 ring-inset ring-line">
-              <CoupleBadge size="sm" />
-              <span className="text-[10px] font-bold tracking-[0.16em] text-ink-muted uppercase">
-                {couple?.town?.split(",").pop()?.trim() || "Your town"}
-              </span>
-            </div>
           </div>
 
           {/* Legend */}
