@@ -22,7 +22,7 @@ const ICON_SVG = (size) => `
     </linearGradient>
   </defs>
   <rect width="100" height="100" rx="22" fill="url(#bg)" />
-  <g fill="#0a0a0a" transform="translate(14 0) scale(0.72)">
+  <g fill="#0a0a0a" transform="translate(9 9) scale(0.82)">
     <path d="${FORKS_PATH_1}" />
     <path d="${FORKS_PATH_2}" />
   </g>
@@ -38,7 +38,7 @@ const MASKABLE_SVG = (size) => `
     </linearGradient>
   </defs>
   <rect width="100" height="100" fill="url(#bg2)" />
-  <g fill="#0a0a0a" transform="translate(28 16) scale(0.44)">
+  <g fill="#0a0a0a" transform="translate(24 24) scale(0.52)">
     <path d="${FORKS_PATH_1}" />
     <path d="${FORKS_PATH_2}" />
   </g>
@@ -53,7 +53,7 @@ const FAVICON_SVG = `
     </linearGradient>
   </defs>
   <rect width="100" height="100" rx="22" fill="url(#bg)" />
-  <g fill="#0a0a0a" transform="translate(14 0) scale(0.72)">
+  <g fill="#0a0a0a" transform="translate(9 9) scale(0.82)">
     <path d="${FORKS_PATH_1}" />
     <path d="${FORKS_PATH_2}" />
   </g>
