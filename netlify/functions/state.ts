@@ -71,7 +71,7 @@ export default async (req: Request): Promise<Response> => {
     if (req.method === "POST") {
       const body = (await req.json()) as {
         table: "restaurants" | "visits" | "dishes";
-        record: { id: string };
+        record: Record<string, unknown> & { id: string };
       };
       if (!body.table || !body.record?.id) {
         return jsonResponse({ error: "missing table/record" }, 400);
@@ -84,10 +84,27 @@ export default async (req: Request): Promise<Response> => {
       ) {
         return jsonResponse({ error: "invalid table" }, 400);
       }
-      const list = (state[body.table] ?? []) as Array<{ id: string }>;
+      const list = (state[body.table] ?? []) as Array<
+        Record<string, unknown> & { id: string }
+      >;
       const idx = list.findIndex((r) => r.id === body.record.id);
-      if (idx >= 0) list[idx] = body.record;
-      else list.push(body.record);
+      if (idx >= 0) {
+        // Stale-write guard: refuse to overwrite a newer record with an
+        // older one. Restaurants use updatedAt; visits/dishes use createdAt.
+        const existing = list[idx];
+        const tsField = body.table === "restaurants" ? "updatedAt" : "createdAt";
+        const existingTs = Number(existing[tsField] ?? 0);
+        const incomingTs = Number(body.record[tsField] ?? 0);
+        if (existingTs > 0 && incomingTs > 0 && incomingTs < existingTs) {
+          return jsonResponse(
+            { ok: false, reason: "stale", existingTs, incomingTs },
+            409,
+          );
+        }
+        list[idx] = body.record;
+      } else {
+        list.push(body.record);
+      }
       (state[body.table] as unknown) = list;
       await writeState(slug, state);
       return jsonResponse({ ok: true, serverTime: state.serverTime });

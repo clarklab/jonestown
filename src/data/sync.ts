@@ -13,6 +13,7 @@
  */
 
 import {
+  clearAllCaches,
   emitChange,
   getCurrentCoupleId,
   getCouple,
@@ -195,7 +196,11 @@ async function postRecord(
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ table, record }),
     });
-    return res.ok;
+    // 409 = server has a newer record. That's a "successful" push from our
+    // POV — no point retrying, the server is authoritative for the newer
+    // value and the next pull will reconcile our local copy.
+    if (res.ok || res.status === 409) return true;
+    return false;
   } catch {
     return false;
   }
@@ -232,6 +237,11 @@ async function pull(): Promise<void> {
 
 async function mergeIntoLocal(remote: ServerState) {
   const db = await getDb();
+
+  // Wipe the in-memory cache so subscribers re-query against fresh IDB
+  // contents after this merge. Without this, optimistic-cache reads would
+  // serve up the pre-merge view until the next mutation.
+  clearAllCaches();
 
   const txR = db.transaction("restaurants", "readwrite");
   let touchedR = false;

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Header } from "~/components/Header";
 import { Icon } from "~/components/Icon";
 import { Stars, UserStars } from "~/components/Stars";
@@ -26,7 +26,10 @@ export function RestaurantPage() {
   const visits = useVisits(id);
   const dishes = useDishes({ restaurantId: id });
   const navigate = useNavigate();
+  const location = useLocation();
   const [currentUser] = useCurrentUser();
+  const justSavedVisitId = (location.state as { justSavedVisitId?: string } | null)
+    ?.justSavedVisitId;
 
   if (!restaurant || !agg) {
     return (
@@ -180,7 +183,11 @@ export function RestaurantPage() {
         </p>
         <div className="mt-3 flex flex-col gap-2">
           {visits.map((v) => (
-            <VisitRow key={v.id} visit={v} />
+            <VisitRow
+              key={v.id}
+              visit={v}
+              justSaved={v.id === justSavedVisitId}
+            />
           ))}
         </div>
       </section>
@@ -374,12 +381,31 @@ function DishTile({ dish }: { dish: Dish }) {
   );
 }
 
-function VisitRow({ visit }: { visit: Visit }) {
+function VisitRow({ visit, justSaved }: { visit: Visit; justSaved?: boolean }) {
   const u = USERS[visit.userId];
   return (
+    <motion.div
+      initial={justSaved ? { scale: 0.98, opacity: 0.9 } : false}
+      animate={
+        justSaved
+          ? {
+              scale: [0.98, 1.02, 1],
+              boxShadow: [
+                "0 0 0 0px var(--color-tennis-500)",
+                "0 0 0 6px oklch(0.86 0.24 119 / 0.5)",
+                "0 0 0 0px var(--color-tennis-500)",
+              ],
+            }
+          : {}
+      }
+      transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+      className="rounded-2xl"
+    >
     <Link
       to={`/r/${visit.restaurantId}/dish/${visit.id}`}
-      className="pressable flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-inset ring-line"
+      className={`pressable flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-inset ${
+        justSaved ? "ring-tennis-500/40" : "ring-line"
+      }`}
     >
       <UserChip id={visit.userId} size="md" />
       <div className="min-w-0 flex-1">
@@ -414,5 +440,6 @@ function VisitRow({ visit }: { visit: Visit }) {
       </div>
       <Icon name="chevron_right" size={22} color="var(--color-ink-faint)" />
     </Link>
+    </motion.div>
   );
 }

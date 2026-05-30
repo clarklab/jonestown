@@ -243,8 +243,14 @@ export async function ensureSeeded(coupleId: string): Promise<void> {
   }
 
   // For Jonestown TX couples (the original audience), pre-rate Bamboo Garden
-  // as their first pick. Other towns get a clean slate. Idempotent per-couple
-  // via flags. Successive versions update existing rows non-destructively.
+  // as their first pick. STRICTLY ADDITIVE — never overwrites a record that
+  // already exists, and never touches anything once the couple has logged
+  // visits/dishes of their own.
+  //
+  // History note: earlier bamboo:v2/v3 migrations rewrote the seed visits
+  // each time they bumped, which wiped any user edits on the Bamboo entry.
+  // That bug ate at least one real review. This version refuses to touch
+  // any existing row — once written, it's the user's to edit.
   const couple = await db.get("couples", coupleId);
   const isJonestown =
     !!couple && /jonestown|78645/i.test(couple.town ?? "");
@@ -252,8 +258,14 @@ export async function ensureSeeded(coupleId: string): Promise<void> {
     const restId = isDefault ? "bamboo-garden" : `${coupleId}:bamboo-garden`;
     const exists = await db.get("restaurants", restId);
     if (exists) {
-      const bambooV3Flag = await db.get("meta", `bamboo:${coupleId}:v3`);
-      if (!bambooV3Flag) {
+      // The bamboo seed has shipped under three flag names over time. If
+      // *any* of them is set we treat the seed as already applied and bail
+      // — we don't know what the user has done with the records since.
+      const v1 = await db.get("meta", `bamboo:${coupleId}:v1`);
+      const v2 = await db.get("meta", `bamboo:${coupleId}:v2`);
+      const v3 = await db.get("meta", `bamboo:${coupleId}:v3`);
+      const alreadySeeded = !!(v1 || v2 || v3);
+      if (!alreadySeeded) {
         const tx = db.transaction(
           ["visits", "dishes", "meta"],
           "readwrite",
@@ -262,36 +274,41 @@ export async function ensureSeeded(coupleId: string): Promise<void> {
         const visitAId = `${coupleId}-a-bamboo`;
         const visitBId = `${coupleId}-b-bamboo`;
 
-        // Refined notes & ratings. If v1 already created the visits we
-        // preserve their existing dates, otherwise we use `date`.
-        const existingA = await tx.objectStore("visits").get(visitAId);
-        const existingB = await tx.objectStore("visits").get(visitBId);
-        await tx.objectStore("visits").put({
+        // Write the seed records only when they don't already exist. This
+        // covers the case where a partial seed ran in a prior version.
+        const putVisitIfMissing = async (record: Visit) => {
+          const store = tx.objectStore("visits");
+          if (!(await store.get(record.id))) await store.put(record);
+        };
+        const putDishIfMissing = async (record: Dish) => {
+          const store = tx.objectStore("dishes");
+          if (!(await store.get(record.id))) await store.put(record);
+        };
+
+        await putVisitIfMissing({
           id: visitAId,
           coupleId,
           restaurantId: restId,
           userId: "a",
-          date: existingA?.date ?? date,
+          date,
           rating: 3.5,
           notes:
             "Phoenix chicken was good — would get again. Fried rice was mid, needs veggies.",
-          occasion: existingA?.occasion ?? "Friday night",
-          createdAt: existingA?.createdAt ?? date,
+          occasion: "Friday night",
+          createdAt: date,
         });
-        await tx.objectStore("visits").put({
+        await putVisitIfMissing({
           id: visitBId,
           coupleId,
           restaurantId: restId,
           userId: "b",
-          date: existingB?.date ?? date + 1000,
+          date: date + 1000,
           rating: 3,
           notes:
             "Sweet & sour chicken — wanted more pineapple. Fried rice mid, needs veggies.",
-          createdAt: existingB?.createdAt ?? date + 1000,
+          createdAt: date + 1000,
         });
-
-        // Phoenix chicken dish (Clark's pick) — "would get again"
-        await tx.objectStore("dishes").put({
+        await putDishIfMissing({
           id: `${coupleId}-a-bamboo-phoenix`,
           coupleId,
           visitId: visitAId,
@@ -302,22 +319,17 @@ export async function ensureSeeded(coupleId: string): Promise<void> {
           notes: "Would get again.",
           createdAt: date,
         });
-
-        // Sweet & sour chicken (Angie's pick) — meh, needs more pineapple
-        await tx.objectStore("dishes").put({
+        await putDishIfMissing({
           id: `${coupleId}-b-bamboo-sweetsour`,
           coupleId,
           visitId: visitBId,
           restaurantId: restId,
           userId: "b",
           name: "Sweet & Sour Chicken",
-          verdict: undefined,
           notes: "Wanted more pineapple.",
           createdAt: date + 500,
         });
-
-        // The shared fried-rice complaint — pass
-        await tx.objectStore("dishes").put({
+        await putDishIfMissing({
           id: `${coupleId}-a-bamboo-friedrice`,
           coupleId,
           visitId: visitAId,
@@ -329,16 +341,13 @@ export async function ensureSeeded(coupleId: string): Promise<void> {
           createdAt: date + 200,
         });
 
-        // Mark every prior bamboo migration done.
-        await tx
-          .objectStore("meta")
-          .put({ key: `bamboo:${coupleId}:v1`, value: true });
-        await tx
-          .objectStore("meta")
-          .put({ key: `bamboo:${coupleId}:v2`, value: true });
-        await tx
-          .objectStore("meta")
-          .put({ key: `bamboo:${coupleId}:v3`, value: true });
+        // Mark every prior bamboo migration done so future code paths
+        // don't trigger an overwrite.
+        for (const v of ["v1", "v2", "v3"]) {
+          await tx
+            .objectStore("meta")
+            .put({ key: `bamboo:${coupleId}:${v}`, value: true });
+        }
         await tx.done;
         emitChange("visits");
         emitChange("dishes");
@@ -358,6 +367,132 @@ export function onChange(handler: (table: string) => void) {
   };
   eventBus.addEventListener("change", listener);
   return () => eventBus.removeEventListener("change", listener);
+}
+
+/**
+ * Optimistic in-memory cache.
+ *
+ * Saves write through to this cache synchronously *before* awaiting the
+ * IndexedDB put, so any UI mounted between save and IDB completion still
+ * sees the new record. Lists in here are sorted the same way the public
+ * `list*` functions sort them, so consumers can use the cache directly.
+ *
+ * Keys:
+ *  - restaurants:  `${coupleId}`
+ *  - visits:       `${coupleId}::${restaurantId | "*"}`
+ *  - dishes:       `${coupleId}::${restaurantId | "*"}::${visitId | "*"}`
+ *
+ * The cache is best-effort. If a key isn't present yet we fall through to
+ * IndexedDB, and the result populates the cache.
+ */
+const _cache = {
+  restaurants: new Map<string, Restaurant[]>(),
+  visits: new Map<string, Visit[]>(),
+  dishes: new Map<string, Dish[]>(),
+};
+
+function _restKey(coupleId: string) {
+  return coupleId;
+}
+function _visitKey(coupleId: string, restaurantId?: string) {
+  return `${coupleId}::${restaurantId ?? "*"}`;
+}
+function _dishKey(
+  coupleId: string,
+  restaurantId?: string,
+  visitId?: string,
+) {
+  return `${coupleId}::${restaurantId ?? "*"}::${visitId ?? "*"}`;
+}
+
+export function cachedRestaurants(coupleId: string): Restaurant[] | null {
+  return _cache.restaurants.get(_restKey(coupleId)) ?? null;
+}
+export function cachedVisits(
+  coupleId: string,
+  restaurantId?: string,
+): Visit[] | null {
+  return _cache.visits.get(_visitKey(coupleId, restaurantId)) ?? null;
+}
+export function cachedDishes(
+  coupleId: string,
+  opts?: { restaurantId?: string; visitId?: string },
+): Dish[] | null {
+  return (
+    _cache.dishes.get(
+      _dishKey(coupleId, opts?.restaurantId, opts?.visitId),
+    ) ?? null
+  );
+}
+
+function _upsertRestaurantInCache(r: Restaurant) {
+  if (!r.coupleId) return;
+  const key = _restKey(r.coupleId);
+  const list = _cache.restaurants.get(key);
+  if (!list) return;
+  const idx = list.findIndex((x) => x.id === r.id);
+  const next = idx >= 0 ? list.map((x, i) => (i === idx ? r : x)) : [...list, r];
+  next.sort((a, b) => a.name.localeCompare(b.name));
+  _cache.restaurants.set(key, next.filter((x) => !x.hidden));
+}
+
+function _upsertVisitInCache(visit: Visit) {
+  if (!visit.coupleId) return;
+  // Update all keyed views that this visit belongs to.
+  for (const key of _cache.visits.keys()) {
+    const [coupleId, restFilter] = key.split("::");
+    if (visit.coupleId !== coupleId) continue;
+    if (restFilter !== "*" && restFilter !== visit.restaurantId) continue;
+    const list = _cache.visits.get(key)!;
+    const idx = list.findIndex((v) => v.id === visit.id);
+    const next = idx >= 0 ? list.map((v, i) => (i === idx ? visit : v)) : [...list, visit];
+    next.sort((a, b) => b.date - a.date);
+    _cache.visits.set(key, next);
+  }
+}
+
+function _removeVisitFromCache(visitId: string) {
+  for (const [key, list] of _cache.visits) {
+    if (list.some((v) => v.id === visitId)) {
+      _cache.visits.set(key, list.filter((v) => v.id !== visitId));
+    }
+  }
+}
+
+function _upsertDishInCache(dish: Dish) {
+  if (!dish.coupleId) return;
+  for (const key of _cache.dishes.keys()) {
+    const [coupleId, restFilter, visitFilter] = key.split("::");
+    if (dish.coupleId !== coupleId) continue;
+    if (restFilter !== "*" && restFilter !== dish.restaurantId) continue;
+    if (visitFilter !== "*" && visitFilter !== dish.visitId) continue;
+    const list = _cache.dishes.get(key)!;
+    const idx = list.findIndex((d) => d.id === dish.id);
+    const next = idx >= 0 ? list.map((d, i) => (i === idx ? dish : d)) : [...list, dish];
+    // Visit-scoped view: ascending createdAt; everywhere else: descending.
+    if (visitFilter !== "*")
+      next.sort((a, b) => a.createdAt - b.createdAt);
+    else next.sort((a, b) => b.createdAt - a.createdAt);
+    _cache.dishes.set(key, next);
+  }
+}
+
+function _removeDishFromCache(dishId: string) {
+  for (const [key, list] of _cache.dishes) {
+    if (list.some((d) => d.id === dishId)) {
+      _cache.dishes.set(key, list.filter((d) => d.id !== dishId));
+    }
+  }
+}
+
+function _invalidateAllCaches() {
+  _cache.restaurants.clear();
+  _cache.visits.clear();
+  _cache.dishes.clear();
+}
+
+export function clearAllCaches() {
+  _invalidateAllCaches();
 }
 
 // ---- Couples ----
@@ -464,9 +599,11 @@ export async function listRestaurants(
 ): Promise<Restaurant[]> {
   const db = await getDb();
   const all = await db.getAllFromIndex("restaurants", "coupleId", coupleId);
-  return all
+  const next = all
     .filter((r) => !r.hidden)
     .sort((a, b) => a.name.localeCompare(b.name));
+  _cache.restaurants.set(_restKey(coupleId), next);
+  return next;
 }
 
 export async function getRestaurant(
@@ -491,8 +628,12 @@ export async function saveRestaurant(
     createdAt: existing?.createdAt ?? r.createdAt ?? now,
     updatedAt: now,
   };
-  await db.put("restaurants", next);
+  // Optimistic: reflect in the in-memory cache and fire the change event
+  // before awaiting the IDB write so any consumer that re-queries between
+  // now and the IDB completion still sees the new record.
+  _upsertRestaurantInCache(next);
   emitChange("restaurants");
+  await db.put("restaurants", next);
   return next;
 }
 
@@ -500,8 +641,15 @@ export async function hideRestaurant(id: string): Promise<void> {
   const db = await getDb();
   const r = await db.get("restaurants", id);
   if (!r) return;
-  await db.put("restaurants", { ...r, hidden: true, updatedAt: Date.now() });
+  const next = { ...r, hidden: true, updatedAt: Date.now() };
+  // Optimistic: hide locally before awaiting IDB.
+  if (next.coupleId) {
+    const key = _restKey(next.coupleId);
+    const cur = _cache.restaurants.get(key);
+    if (cur) _cache.restaurants.set(key, cur.filter((x) => x.id !== id));
+  }
   emitChange("restaurants");
+  await db.put("restaurants", next);
 }
 
 // ---- Visits ----
@@ -522,18 +670,24 @@ export async function listVisits(opts: {
   } else {
     all = await db.getAllFromIndex("visits", "coupleId", opts.coupleId);
   }
-  return all.sort((a, b) => b.date - a.date);
+  const next = all.sort((a, b) => b.date - a.date);
+  _cache.visits.set(_visitKey(opts.coupleId, opts.restaurantId), next);
+  return next;
 }
 
 export async function saveVisit(visit: Visit): Promise<Visit> {
   const db = await getDb();
-  await db.put("visits", visit);
+  _upsertVisitInCache(visit);
   emitChange("visits");
+  await db.put("visits", visit);
   return visit;
 }
 
 export async function deleteVisit(id: string): Promise<void> {
   const db = await getDb();
+  // Optimistic: remove from cache + emit before IDB tx so the UI updates
+  // immediately. We collect dish ids inside the tx for cache cleanup.
+  _removeVisitFromCache(id);
   const tx = db.transaction(["visits", "dishes", "photos"], "readwrite");
   const dishes = await tx
     .objectStore("dishes")
@@ -542,6 +696,7 @@ export async function deleteVisit(id: string): Promise<void> {
   for (const d of dishes) {
     if (d.photoId) await tx.objectStore("photos").delete(d.photoId);
     await tx.objectStore("dishes").delete(d.id);
+    _removeDishFromCache(d.id);
   }
   await tx.objectStore("visits").delete(id);
   await tx.done;
@@ -558,28 +713,35 @@ export async function listDishes(opts: {
 }): Promise<Dish[]> {
   const db = await getDb();
   let all: Dish[];
+  let next: Dish[];
   if (opts.visitId) {
     all = await db.getAllFromIndex("dishes", "visitId", opts.visitId);
     all = all.filter((d) => d.coupleId === opts.coupleId);
-    return all.sort((a, b) => a.createdAt - b.createdAt);
-  }
-  if (opts.restaurantId) {
+    next = all.sort((a, b) => a.createdAt - b.createdAt);
+  } else if (opts.restaurantId) {
     all = await db.getAllFromIndex(
       "dishes",
       "restaurantId",
       opts.restaurantId,
     );
     all = all.filter((d) => d.coupleId === opts.coupleId);
-    return all.sort((a, b) => b.createdAt - a.createdAt);
+    next = all.sort((a, b) => b.createdAt - a.createdAt);
+  } else {
+    all = await db.getAllFromIndex("dishes", "coupleId", opts.coupleId);
+    next = all.sort((a, b) => b.createdAt - a.createdAt);
   }
-  all = await db.getAllFromIndex("dishes", "coupleId", opts.coupleId);
-  return all.sort((a, b) => b.createdAt - a.createdAt);
+  _cache.dishes.set(
+    _dishKey(opts.coupleId, opts.restaurantId, opts.visitId),
+    next,
+  );
+  return next;
 }
 
 export async function saveDish(dish: Dish): Promise<Dish> {
   const db = await getDb();
-  await db.put("dishes", dish);
+  _upsertDishInCache(dish);
   emitChange("dishes");
+  await db.put("dishes", dish);
   return dish;
 }
 
@@ -587,9 +749,10 @@ export async function deleteDish(id: string): Promise<void> {
   const db = await getDb();
   const dish = await db.get("dishes", id);
   if (!dish) return;
+  _removeDishFromCache(id);
+  emitChange("dishes");
   if (dish.photoId) await db.delete("photos", dish.photoId);
   await db.delete("dishes", id);
-  emitChange("dishes");
 }
 
 // ---- Photos ----

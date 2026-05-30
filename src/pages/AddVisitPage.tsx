@@ -122,7 +122,10 @@ export function AddVisitPage() {
         : "Visit logged",
       { icon: "check_circle" },
     );
-    navigate(`/r/${restaurantId}`);
+    // Hand the destination page a hint so it can pulse the just-saved visit.
+    navigate(`/r/${restaurantId}`, {
+      state: { justSavedVisitId: visitId },
+    });
   };
 
   if (restaurantPickerOpen) {

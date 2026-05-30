@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  cachedDishes,
+  cachedRestaurants,
+  cachedVisits,
   getCouple,
   getCurrentCoupleId,
   getCurrentUser,
@@ -86,13 +89,21 @@ export function useCurrentUser(): [UserId, (id: UserId) => void] {
 
 export function useRestaurants(): Restaurant[] {
   const couple = useCurrentCouple();
-  const [items, setItems] = useState<Restaurant[]>([]);
+  // Initialize from the in-memory cache so cross-page navigation has no
+  // "empty then loaded" flash. The async refresh below brings the list
+  // back in sync with IndexedDB.
+  const [items, setItems] = useState<Restaurant[]>(() =>
+    couple ? (cachedRestaurants(couple.id) ?? []) : [],
+  );
   const tick = useTables(["restaurants"]);
   useEffect(() => {
     if (!couple) {
       setItems([]);
       return;
     }
+    // Read cache synchronously again on couple swap.
+    const c = cachedRestaurants(couple.id);
+    if (c) setItems(c);
     listRestaurants(couple.id).then(setItems);
   }, [couple?.id, tick]);
   return items;
@@ -110,13 +121,17 @@ export function useRestaurant(id: string | undefined): Restaurant | null {
 
 export function useVisits(restaurantId?: string): Visit[] {
   const couple = useCurrentCouple();
-  const [items, setItems] = useState<Visit[]>([]);
+  const [items, setItems] = useState<Visit[]>(() =>
+    couple ? (cachedVisits(couple.id, restaurantId) ?? []) : [],
+  );
   const tick = useTables(["visits"]);
   useEffect(() => {
     if (!couple) {
       setItems([]);
       return;
     }
+    const c = cachedVisits(couple.id, restaurantId);
+    if (c) setItems(c);
     listVisits({ coupleId: couple.id, restaurantId }).then(setItems);
   }, [couple?.id, restaurantId, tick]);
   return items;
@@ -127,7 +142,9 @@ export function useDishes(filter?: {
   visitId?: string;
 }): Dish[] {
   const couple = useCurrentCouple();
-  const [items, setItems] = useState<Dish[]>([]);
+  const [items, setItems] = useState<Dish[]>(() =>
+    couple ? (cachedDishes(couple.id, filter) ?? []) : [],
+  );
   const tick = useTables(["dishes", "photos"]);
   const key = `${filter?.restaurantId ?? ""}|${filter?.visitId ?? ""}`;
   useEffect(() => {
@@ -135,6 +152,8 @@ export function useDishes(filter?: {
       setItems([]);
       return;
     }
+    const c = cachedDishes(couple.id, filter);
+    if (c) setItems(c);
     listDishes({ coupleId: couple.id, ...filter }).then(setItems);
   }, [couple?.id, key, tick]); // eslint-disable-line react-hooks/exhaustive-deps
   return items;
