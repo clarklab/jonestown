@@ -324,9 +324,9 @@ export const CATALOG: CatalogEntry[] = [
     },
   },
   // Gnarly Gar (18200 Lakepoint Cove) closed in Sept 2021. The slip is now
-  // Captain Pete's Boathouse — see below.
+  // Captain Pete's Boathouse — auto-seeded below.
   {
-    inSeed: false,
+    inSeed: true,
     data: {
       id: "captain-petes",
       name: "Captain Pete's Boathouse",
