@@ -14,7 +14,15 @@ export function Header({
   transparent = false,
 }: {
   title?: string;
-  back?: boolean;
+  /**
+   * Absolute path the Back arrow should navigate to. Each page declares its
+   * own logical parent (e.g. RestaurantPage → "/") instead of relying on
+   * browser history, so:
+   *   - landing on a page directly (typed URL, share link) still gives a
+   *     sensible Back target inside the app, and
+   *   - the post-save redirect doesn't strand Back on a stale form entry.
+   */
+  back?: string;
   trailing?: React.ReactNode;
   transparent?: boolean;
 }) {
@@ -33,7 +41,7 @@ export function Header({
       {back ? (
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate(back)}
           aria-label="Back"
           className="pressable relative -ml-1 flex size-10 items-center justify-center rounded-full bg-surface ring-1 ring-inset ring-line"
         >

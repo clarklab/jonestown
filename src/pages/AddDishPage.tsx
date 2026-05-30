@@ -73,7 +73,7 @@ export function AddDishPage() {
   return (
     <div className="pb-12">
       <Header
-        back
+        back={`/r/${restaurantId}`}
         title="Add a dish"
         trailing={
           <button

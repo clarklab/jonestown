@@ -29,6 +29,7 @@ export interface CatalogEntry {
     | "links"
     | "phone"
     | "imageUrl"
+    | "coords"
   >;
 }
 
@@ -40,6 +41,7 @@ export const CATALOG: CatalogEntry[] = [
     inSeed: true,
     data: {
       id: "bamboo-garden",
+      coords: { lat: 30.4509, lng: -97.9881 },
       name: "Bamboo Garden Wok 'N' Grill",
       cuisine: "Chinese · Wok",
       area: "Lago Vista",
@@ -53,6 +55,7 @@ export const CATALOG: CatalogEntry[] = [
     inSeed: true,
     data: {
       id: "lucky-rabbit",
+      coords: { lat: 30.4933, lng: -97.917 },
       name: "The Lucky Rabbit",
       cuisine: "Bar · Burgers · Live Music",
       area: "Jonestown",
@@ -65,6 +68,7 @@ export const CATALOG: CatalogEntry[] = [
     inSeed: true,
     data: {
       id: "bajo-la-luna",
+      coords: { lat: 30.4935, lng: -97.9175 },
       name: "Bajo La Luna",
       cuisine: "Tex-Mex",
       area: "Jonestown",
@@ -79,6 +83,7 @@ export const CATALOG: CatalogEntry[] = [
     inSeed: true,
     data: {
       id: "la-chaparrita",
+      coords: { lat: 30.4934, lng: -97.9168 },
       name: "La Chaparrita Mexican Food",
       cuisine: "Mexican",
       area: "Jonestown",
@@ -92,6 +97,7 @@ export const CATALOG: CatalogEntry[] = [
     inSeed: true,
     data: {
       id: "the-burger-bar",
+      coords: { lat: 30.451, lng: -97.9882 },
       name: "The Burger Bar",
       cuisine: "Burgers",
       area: "Lago Vista",
@@ -102,6 +108,7 @@ export const CATALOG: CatalogEntry[] = [
     inSeed: true,
     data: {
       id: "floating-tavern",
+      coords: { lat: 30.487, lng: -97.93 },
       name: "Floating Tavern",
       cuisine: "Bar · American",
       area: "Jonestown",
@@ -111,6 +118,7 @@ export const CATALOG: CatalogEntry[] = [
     inSeed: true,
     data: {
       id: "wild-hare-bar-grill",
+      coords: { lat: 30.4615, lng: -97.958 },
       name: "Wild Hare Bar & Grill",
       cuisine: "Bar · Grill",
       area: "Jonestown",
@@ -123,6 +131,7 @@ export const CATALOG: CatalogEntry[] = [
     inSeed: true,
     data: {
       id: "alba-wine-bar",
+      coords: { lat: 30.4938, lng: -97.918 },
       name: "Alba Wine Bar",
       cuisine: "Wine Bar · French",
       area: "Jonestown",
@@ -135,6 +144,7 @@ export const CATALOG: CatalogEntry[] = [
     inSeed: true,
     data: {
       id: "dominos-jonestown",
+      coords: { lat: 30.4508, lng: -97.988 },
       name: "Domino's Pizza",
       cuisine: "Pizza · Chain",
       area: "Lago Vista",
@@ -146,6 +156,7 @@ export const CATALOG: CatalogEntry[] = [
     inSeed: true,
     data: {
       id: "the-cedar-tree",
+      coords: { lat: 30.4509, lng: -97.9883 },
       name: "The Cedar Tree Mediterranean Grill & Café",
       cuisine: "Mediterranean",
       area: "Lago Vista",
@@ -157,6 +168,7 @@ export const CATALOG: CatalogEntry[] = [
     inSeed: true,
     data: {
       id: "bella-vista-lv",
+      coords: { lat: 30.4511, lng: -97.9881 },
       name: "Bella Vista",
       cuisine: "Italian",
       area: "Lago Vista",
@@ -170,6 +182,7 @@ export const CATALOG: CatalogEntry[] = [
     inSeed: true,
     data: {
       id: "copperhead-grille",
+      coords: { lat: 30.4595, lng: -97.9905 },
       name: "Copperhead Grill",
       cuisine: "Burgers · Bar",
       area: "Lago Vista",
@@ -182,6 +195,7 @@ export const CATALOG: CatalogEntry[] = [
     inSeed: true,
     data: {
       id: "island-bar-grill",
+      coords: { lat: 30.447, lng: -97.999 },
       name: "The Island Bar & Grill",
       cuisine: "American · Bar",
       area: "Lago Vista",
@@ -194,6 +208,7 @@ export const CATALOG: CatalogEntry[] = [
     inSeed: true,
     data: {
       id: "bunker-bar-grille",
+      coords: { lat: 30.464, lng: -97.981 },
       name: "The Bunker Bar and Grille",
       cuisine: "Bar · Grill",
       area: "Lago Vista",
@@ -208,6 +223,7 @@ export const CATALOG: CatalogEntry[] = [
     inSeed: true,
     data: {
       id: "jj-bbq-burgers",
+      coords: { lat: 30.47, lng: -97.974 },
       name: "J&J Barbeque & Burgers",
       cuisine: "BBQ · Burgers",
       area: "Lago Vista",
@@ -220,6 +236,7 @@ export const CATALOG: CatalogEntry[] = [
     inSeed: true,
     data: {
       id: "casa-mexico-truck",
+      coords: { lat: 30.4515, lng: -97.9885 },
       name: "Casa Mexico",
       cuisine: "Mexican · Food Truck",
       area: "Lago Vista",
@@ -232,6 +249,7 @@ export const CATALOG: CatalogEntry[] = [
     inSeed: true,
     data: {
       id: "taqueria-lago-vista",
+      coords: { lat: 30.457, lng: -97.9895 },
       name: "Taquería Lago Vista",
       cuisine: "Tacos · Mexican",
       area: "Lago Vista",
@@ -329,6 +347,7 @@ export const CATALOG: CatalogEntry[] = [
     inSeed: true,
     data: {
       id: "captain-petes",
+      coords: { lat: 30.417, lng: -97.908 },
       name: "Captain Pete's Boathouse",
       cuisine: "Seafood · Bar · Floating",
       area: "Point Venture",

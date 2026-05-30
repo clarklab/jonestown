@@ -60,7 +60,7 @@ export function AddRestaurantPage() {
 
   return (
     <div className="pb-12">
-      <Header back title="Add a restaurant" />
+      <Header back="/add" title="Add a restaurant" />
 
       <section className="px-4">
         <p className="text-sm text-ink-muted">

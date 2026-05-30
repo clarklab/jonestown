@@ -40,7 +40,7 @@ export function RestaurantPage() {
   if (!restaurant || !agg) {
     return (
       <div className="px-4 py-16 text-center">
-        <Header back />
+        <Header back="/" />
         <p className="mt-12 text-ink-muted">Restaurant not found.</p>
       </div>
     );
@@ -57,7 +57,7 @@ export function RestaurantPage() {
 
   return (
     <div className="relative pb-12">
-      <Header back transparent />
+      <Header back="/" transparent />
 
       {/* Hero photo strip */}
       <section className="relative isolate -mt-16 h-64 overflow-hidden">

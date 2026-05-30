@@ -5,13 +5,32 @@ import type { RestaurantAggregate, VerdictStatus } from "~/data/types";
 
 const VB = 800;
 
-// Cluster anchors for the three broad areas. Hand-tuned to feel like
-// "Jonestown is here, Lago Vista is over there, lakeside on the south edge".
+/**
+ * Geographic bbox covering 78645 (Jonestown / Lago Vista / Point Venture /
+ * the north shore of Lake Travis). Pin coords project linearly into the
+ * SVG viewBox using this rectangle. Picked to leave a touch of padding
+ * around the actual restaurant extent.
+ *   south=30.395 → bottom of SVG
+ *   north=30.515 → top of SVG
+ *   west=-98.005 → left of SVG
+ *   east=-97.880 → right of SVG
+ */
+const BBOX = {
+  south: 30.395,
+  north: 30.515,
+  west: -98.04,
+  east: -97.86,
+};
+
+// Fallback cluster anchors for restaurants that lack coords (user-added
+// without an address). Hand-tuned to land roughly where each area sits on
+// the projection above.
 const AREA_ANCHORS: Record<string, { x: number; y: number; r: number }> = {
-  jonestown: { x: 280, y: 280, r: 160 },
-  "lago vista": { x: 540, y: 360, r: 180 },
-  "lake travis": { x: 470, y: 620, r: 130 },
-  default: { x: 400, y: 420, r: 200 },
+  jonestown: { x: 600, y: 200, r: 70 },
+  "lago vista": { x: 170, y: 460, r: 100 },
+  "point venture": { x: 580, y: 660, r: 60 },
+  "lake travis": { x: 470, y: 700, r: 80 },
+  default: { x: 400, y: 420, r: 120 },
 };
 
 interface Placement {
@@ -38,42 +57,95 @@ function rng(seed: number): () => number {
   };
 }
 
-function placeRestaurants(aggs: RestaurantAggregate[]): Placement[] {
-  const byArea: Record<string, RestaurantAggregate[]> = {};
-  for (const a of aggs) {
-    const area = (a.restaurant.area ?? "default").toLowerCase();
-    const key = AREA_ANCHORS[area] ? area : "default";
-    (byArea[key] ||= []).push(a);
+/** Project lat/lng onto the SVG viewBox via the BBOX rectangle. */
+function projectGeo(lat: number, lng: number): { x: number; y: number } {
+  const x = ((lng - BBOX.west) / (BBOX.east - BBOX.west)) * VB;
+  const y = (1 - (lat - BBOX.south) / (BBOX.north - BBOX.south)) * VB;
+  return { x, y };
+}
+
+/**
+ * Many restaurants share an address (e.g. four tenants of the 7708 Lohmans
+ * Ford strip center all geocode to the same lat/lng). After projection, fan
+ * any colliders out in a small ring so each pin stays tappable instead of
+ * stacking into a single dot.
+ */
+function spreadColliders(placements: Placement[]): Placement[] {
+  const groups: Record<string, Placement[]> = {};
+  for (const p of placements) {
+    const key = `${Math.round(p.x / 8)}_${Math.round(p.y / 8)}`;
+    (groups[key] ||= []).push(p);
   }
+  const out: Placement[] = [];
+  for (const group of Object.values(groups)) {
+    if (group.length === 1) {
+      out.push(group[0]);
+      continue;
+    }
+    const ring = 28;
+    // Sort by id for stable order across renders.
+    const sorted = [...group].sort((a, b) =>
+      a.agg.restaurant.id.localeCompare(b.agg.restaurant.id),
+    );
+    sorted.forEach((p, i) => {
+      const angle = (i / sorted.length) * Math.PI * 2 - Math.PI / 2;
+      out.push({
+        ...p,
+        x: p.x + Math.cos(angle) * ring,
+        y: p.y + Math.sin(angle) * ring,
+      });
+    });
+  }
+  return out;
+}
+
+function placeRestaurants(aggs: RestaurantAggregate[]): Placement[] {
   const placements: Placement[] = [];
-  for (const [areaKey, list] of Object.entries(byArea)) {
+  // Group fallback pins (no coords) by area so they still cluster sensibly.
+  const fallbackByArea: Record<string, RestaurantAggregate[]> = {};
+
+  for (const a of aggs) {
+    const c = a.restaurant.coords;
+    if (c) {
+      const { x, y } = projectGeo(c.lat, c.lng);
+      placements.push({
+        agg: a,
+        x: clamp(x, 40, VB - 40),
+        y: clamp(y, 40, VB - 40),
+        area: (a.restaurant.area ?? "").toLowerCase(),
+      });
+    } else {
+      const area = (a.restaurant.area ?? "default").toLowerCase();
+      const key = AREA_ANCHORS[area] ? area : "default";
+      (fallbackByArea[key] ||= []).push(a);
+    }
+  }
+
+  // Fallback: hash-spread inside the area anchor for restaurants missing coords.
+  const phi = 2.39996323;
+  for (const [areaKey, list] of Object.entries(fallbackByArea)) {
     const anchor = AREA_ANCHORS[areaKey] ?? AREA_ANCHORS.default;
-    // Deterministic but visually scattered — golden-angle spiral.
-    const phi = 2.39996323; // golden angle in rad
     list.forEach((agg, i) => {
       const r = rng(hash(agg.restaurant.id));
       const idx = i + 0.5;
-      const jitterAngle = r() * Math.PI * 2;
-      const jitterMag = (0.45 + r() * 0.55) * anchor.r * 0.85;
-      const spiralR = Math.sqrt(idx / list.length) * anchor.r * 0.9;
-      const spiralA = idx * phi;
-      const x =
-        anchor.x +
-        Math.cos(spiralA) * spiralR * 0.7 +
-        Math.cos(jitterAngle) * jitterMag * 0.3;
-      const y =
-        anchor.y +
-        Math.sin(spiralA) * spiralR * 0.7 +
-        Math.sin(jitterAngle) * jitterMag * 0.3;
+      const spiralR = Math.sqrt(idx / list.length) * anchor.r * 0.85;
+      const spiralA = idx * phi + r() * 0.6;
+      const x = anchor.x + Math.cos(spiralA) * spiralR;
+      const y = anchor.y + Math.sin(spiralA) * spiralR;
       placements.push({
         agg,
-        x: Math.max(60, Math.min(VB - 60, x)),
-        y: Math.max(60, Math.min(VB - 60, y)),
+        x: clamp(x, 40, VB - 40),
+        y: clamp(y, 40, VB - 40),
         area: areaKey,
       });
     });
   }
-  return placements;
+
+  return spreadColliders(placements);
+}
+
+function clamp(n: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, n));
 }
 
 export function TownMap({
@@ -240,42 +312,32 @@ export function TownMap({
             ))}
         </g>
 
-        {/* Compass rose */}
-        <Compass />
       </svg>
     </div>
   );
 }
 
 function LakePath() {
+  // Lake Travis sits south of the bbox, but reaches up to wrap around the
+  // Point Venture peninsula on the east side. Stylized band along the
+  // bottom with a curve that dips around (x≈600, y≈630) where Captain
+  // Pete's lands.
+  const d = `
+    M -20 720
+    C 120 690, 240 700, 360 720
+    C 460 740, 520 720, 560 680
+    C 600 645, 640 660, 700 700
+    C 760 730, 800 740, 820 740
+    L 820 820
+    L -20 820
+    Z
+  `;
   return (
     <g>
+      <path d={d} fill="url(#water-grad)" />
+      <path d={d} fill="url(#water-dots)" opacity="0.6" />
       <path
-        d="M 820 380
-           C 700 360, 620 420, 560 480
-           C 510 530, 480 600, 510 670
-           C 540 740, 620 760, 720 760
-           C 820 760, 870 700, 880 640
-           L 880 380
-           Z"
-        fill="url(#water-grad)"
-      />
-      <path
-        d="M 820 380
-           C 700 360, 620 420, 560 480
-           C 510 530, 480 600, 510 670
-           C 540 740, 620 760, 720 760
-           C 820 760, 870 700, 880 640
-           L 880 380
-           Z"
-        fill="url(#water-dots)"
-        opacity="0.6"
-      />
-      {/* Lake outline highlight */}
-      <path
-        d="M 820 380
-           C 700 360, 620 420, 560 480
-           C 510 530, 480 600, 510 670"
+        d="M -20 720 C 120 690, 240 700, 360 720 C 460 740, 520 720, 560 680 C 600 645, 640 660, 700 700 C 760 730, 800 740, 820 740"
         fill="none"
         stroke="oklch(0.7 0.1 230)"
         strokeWidth="2.5"
@@ -287,6 +349,9 @@ function LakePath() {
 }
 
 function RoadPaths() {
+  // Two abstracted thoroughfares — FM 1431 (east-west through the upper
+  // half, connecting Jonestown ↔ Lago Vista) and Lohmans Ford Rd (vertical
+  // spine of Lago Vista, running down to the lake).
   return (
     <g
       fill="none"
@@ -295,18 +360,22 @@ function RoadPaths() {
       strokeLinecap="round"
       strokeDasharray="2 8"
     >
-      <path d="M 60 200 Q 260 240, 460 320 T 800 360" />
-      <path d="M 280 80 Q 320 240, 380 460 T 460 760" />
-      <path d="M 60 540 Q 260 520, 460 540 T 760 540" />
+      {/* FM 1431 — connects Lago Vista (left) to Jonestown (upper right) */}
+      <path d="M 60 480 Q 220 360, 380 280 T 720 180" />
+      {/* Lohmans Ford Rd — Lago Vista north to the lake */}
+      <path d="M 150 260 Q 130 380, 130 500 T 160 720" />
     </g>
   );
 }
 
 function AreaLabels() {
+  // Anchored to the projected cluster centers — see BBOX above. Hand-nudged
+  // to sit alongside, not on top of, the pin clusters.
   const labels = [
-    { x: 230, y: 110, text: "JONESTOWN" },
-    { x: 600, y: 200, text: "LAGO VISTA" },
-    { x: 350, y: 720, text: "LAKE TRAVIS" },
+    { x: 560, y: 200, text: "JONESTOWN" },
+    { x: 200, y: 510, text: "LAGO VISTA" },
+    { x: 600, y: 600, text: "POINT VENTURE" },
+    { x: 380, y: 750, text: "LAKE TRAVIS" },
   ];
   return (
     <g>
@@ -325,26 +394,6 @@ function AreaLabels() {
           {l.text}
         </text>
       ))}
-    </g>
-  );
-}
-
-function Compass() {
-  return (
-    <g transform={`translate(${VB - 80} 80)`} opacity="0.5">
-      <circle r="32" fill="oklch(1 0 0 / 0.7)" stroke="oklch(0 0 0 / 0.18)" strokeWidth="1.5" />
-      <path d="M 0 -24 L 6 0 L 0 24 L -6 0 Z" fill="oklch(0.62 0.25 12)" />
-      <path d="M 0 -24 L 6 0 L 0 0 Z" fill="oklch(0.46 0.21 12)" />
-      <text
-        x="0"
-        y="-12"
-        textAnchor="middle"
-        fontSize="9"
-        fontWeight="700"
-        fill="oklch(0 0 0 / 0.6)"
-      >
-        N
-      </text>
     </g>
   );
 }

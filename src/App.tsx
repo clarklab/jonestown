@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { TabBar } from "./components/TabBar";
 import { HomePage } from "./pages/HomePage";
@@ -81,40 +80,28 @@ export function App() {
   return (
     <div className="relative flex min-h-dvh flex-col bg-paper text-ink">
       <main className="flex-1 pb-32">
-        <AnimatePresence mode="wait" initial={false}>
-          <PageFrame key={location.pathname}>
-            <Routes location={location}>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/r/:id" element={<RestaurantPage />} />
-              <Route path="/r/:id/visit" element={<AddVisitPage />} />
-              <Route path="/r/:id/dish/:visitId" element={<AddDishPage />} />
-              <Route path="/add" element={<AddVisitPage />} />
-              <Route path="/add/restaurant" element={<AddRestaurantPage />} />
-              <Route path="/admin" element={<AdminPage />} />
-              <Route path="/log" element={<LogPage />} />
-              <Route path="/me" element={<ProfilePage />} />
-              <Route path="/claim" element={<ClaimPage />} />
-              <Route path="/join" element={<JoinPage />} />
-              <Route path="*" element={<HomePage />} />
-            </Routes>
-          </PageFrame>
-        </AnimatePresence>
+        {/* Direct route rendering — the AnimatePresence + PageFrame motion
+            wrapper had a recurring bug where the enter animation got stuck
+            at opacity 0.2 if a global re-render (e.g. Toast appear / dismiss)
+            landed mid-transition, leaving destination pages "blank." React
+            handles unmount/mount cleanly without it. */}
+        <Routes location={location}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/r/:id" element={<RestaurantPage />} />
+          <Route path="/r/:id/visit" element={<AddVisitPage />} />
+          <Route path="/r/:id/dish/:visitId" element={<AddDishPage />} />
+          <Route path="/add" element={<AddVisitPage />} />
+          <Route path="/add/restaurant" element={<AddRestaurantPage />} />
+          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/log" element={<LogPage />} />
+          <Route path="/me" element={<ProfilePage />} />
+          <Route path="/claim" element={<ClaimPage />} />
+          <Route path="/join" element={<JoinPage />} />
+          <Route path="*" element={<HomePage />} />
+        </Routes>
       </main>
       <TabBar />
     </div>
-  );
-}
-
-function PageFrame({ children }: { children: React.ReactNode }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -4 }}
-      transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-    >
-      {children}
-    </motion.div>
   );
 }
 

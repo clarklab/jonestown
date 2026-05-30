@@ -128,6 +128,11 @@ export function AddVisitPage() {
     });
   };
 
+  // Back from this page lands at /r/:id when we entered via /r/:id/visit, or
+  // home when we entered via the global /add picker. Either is a logical
+  // parent — never the previous browser entry.
+  const backTo = restaurantIdParam ? `/r/${restaurantIdParam}` : "/";
+
   if (restaurantPickerOpen) {
     return (
       <RestaurantPicker
@@ -137,7 +142,7 @@ export function AddVisitPage() {
           setRestaurantPickerOpen(false);
         }}
         onCancel={() => {
-          if (!restaurantId) navigate(-1);
+          if (!restaurantId) navigate(backTo);
           else setRestaurantPickerOpen(false);
         }}
       />
@@ -147,7 +152,7 @@ export function AddVisitPage() {
   return (
     <div className="pb-12">
       <Header
-        back
+        back={backTo}
         title="Log a visit"
         trailing={
           <button

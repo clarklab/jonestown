@@ -90,7 +90,7 @@ export function AdminPage() {
 
   return (
     <div className="pb-12">
-      <Header back title="Catalog" />
+      <Header back="/me" title="Catalog" />
 
       <section className="px-4">
         <DiscoverySection />

@@ -135,6 +135,12 @@ export interface Restaurant {
   phone?: string;
   /** Optional hero image URL — overrides the placeholder when present. */
   imageUrl?: string;
+  /**
+   * Approximate geographic coordinates. Used to project the pin onto the
+   * town map literally instead of inside a hand-tuned area cluster. User-
+   * added restaurants without coords fall back to area-anchor placement.
+   */
+  coords?: { lat: number; lng: number };
   createdAt: number;
   updatedAt: number;
 }

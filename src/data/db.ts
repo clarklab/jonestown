@@ -193,7 +193,7 @@ export async function migrateLegacyData(): Promise<void> {
 }
 
 /** Bump when the seed list changes so deployed installs pick up new entries. */
-const SEED_VERSION = 4;
+const SEED_VERSION = 5;
 
 export async function ensureSeeded(coupleId: string): Promise<void> {
   const db = await getDb();
@@ -221,18 +221,30 @@ export async function ensureSeeded(coupleId: string): Promise<void> {
           updatedAt: now,
         });
         touched = true;
-      } else if (
-        r.publicRating &&
-        (!existing.publicRating ||
-          existing.publicRating.source !== r.publicRating.source ||
-          existing.publicRating.value !== r.publicRating.value)
-      ) {
-        await tx.objectStore("restaurants").put({
-          ...existing,
-          publicRating: r.publicRating,
-          updatedAt: now,
-        });
-        touched = true;
+      } else {
+        // Strictly additive top-up of public-source fields. Never overwrites
+        // anything the couple has edited.
+        const patch: Partial<typeof existing> = {};
+        if (
+          r.publicRating &&
+          (!existing.publicRating ||
+            existing.publicRating.source !== r.publicRating.source ||
+            existing.publicRating.value !== r.publicRating.value)
+        ) {
+          patch.publicRating = r.publicRating;
+        }
+        // Backfill coords onto pre-v5 rows that never had them.
+        if (r.coords && !existing.coords) {
+          patch.coords = r.coords;
+        }
+        if (Object.keys(patch).length > 0) {
+          await tx.objectStore("restaurants").put({
+            ...existing,
+            ...patch,
+            updatedAt: now,
+          });
+          touched = true;
+        }
       }
     }
     await tx
