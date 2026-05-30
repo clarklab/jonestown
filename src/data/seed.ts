@@ -323,16 +323,59 @@ export const CATALOG: CatalogEntry[] = [
       phone: "(512) 267-1112",
     },
   },
+  // Gnarly Gar (18200 Lakepoint Cove) closed in Sept 2021. The slip is now
+  // Captain Pete's Boathouse — see below.
   {
     inSeed: false,
     data: {
-      id: "gnarly-gar",
-      name: "Gnarly Gar — Floating Grill & Bar",
-      cuisine: "American · Bar · Lakeside",
-      area: "Lake Travis",
+      id: "captain-petes",
+      name: "Captain Pete's Boathouse",
+      cuisine: "Seafood · Bar · Floating",
+      area: "Point Venture",
       address: "18200 Lakepoint Cove, Point Venture, TX 78645",
-      phone: "(512) 284-7825",
-      notes: "Boat-up lakeside bar.",
+      phone: "(512) 436-8460",
+      notes:
+        "Floating restaurant + bar at Point Venture. Come by land or by boat. Took over the old Gnarly Gar slip.",
+      publicRating: { source: "tripadvisor", value: 4.2, count: 104 },
+      links: { website: "https://www.captainpetesboathouse.com" },
+    },
+  },
+  {
+    inSeed: false,
+    data: {
+      id: "fourth-quarter-bar",
+      name: "4th Quarter Bar & Grill",
+      cuisine: "Sports Bar · American",
+      area: "Point Venture",
+      address: "302 Venture Blvd S, Point Venture, TX 78645",
+      notes: "Locals' sports bar.",
+      publicRating: { source: "yelp", value: 4.3 },
+    },
+  },
+  {
+    inSeed: false,
+    data: {
+      id: "bakers-bbq",
+      name: "Baker's BBQ and Burger",
+      cuisine: "BBQ · Burgers · Food Truck",
+      area: "Point Venture",
+      address: "422 Venture Blvd S, Point Venture, TX 78645",
+      notes: "Food truck operation.",
+    },
+  },
+  {
+    inSeed: false,
+    data: {
+      id: "beachside-billys",
+      name: "Beachside Billy's",
+      cuisine: "American · Bar · Lakeside",
+      area: "Volente",
+      address: "16107 FM 2769, Volente, TX 78641",
+      phone: "(512) 258-5110",
+      notes:
+        "At Volente Beach Resort + Waterpark. Patio sunsets, local Austin musicians.",
+      publicRating: { source: "tripadvisor", value: 4.1 },
+      links: { website: "https://www.volentebeach.com" },
     },
   },
   {
