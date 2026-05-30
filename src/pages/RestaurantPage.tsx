@@ -16,7 +16,13 @@ import {
   useVisits,
 } from "~/data/hooks";
 import { formatDate, formatRelativeDate } from "~/utils/format";
-import { USERS, type Dish, type UserId, type Visit } from "~/data/types";
+import {
+  USERS,
+  type Dish,
+  type Restaurant,
+  type UserId,
+  type Visit,
+} from "~/data/types";
 import { PlaceholderArt } from "~/components/RestaurantCard";
 
 export function RestaurantPage() {
@@ -126,6 +132,8 @@ export function RestaurantPage() {
                 : "Log your visit"}
           </button>
         </div>
+
+        <LinksRow restaurant={restaurant} />
 
         {restaurant.notes ? (
           <p className="mt-4 rounded-2xl bg-surface-2 px-3.5 py-2.5 text-sm font-medium text-ink-muted ring-1 ring-inset ring-line">
@@ -248,6 +256,67 @@ function LockedNotice() {
       <span className="text-xs font-bold text-ink-muted">
         Both of you need to rate to unlock this on the map.
       </span>
+    </div>
+  );
+}
+
+/** Outbound links — Google, website, online ordering, phone — only renders
+ *  when something's available. */
+function LinksRow({ restaurant }: { restaurant: Restaurant }) {
+  const links = restaurant.links ?? {};
+  const cells: Array<{
+    icon: string;
+    label: string;
+    href: string;
+    accent?: boolean;
+  }> = [];
+  // "Order online" is the loudest action, render first if present.
+  if (links.order)
+    cells.push({
+      icon: "delivery_dining",
+      label: "Order",
+      href: links.order,
+      accent: true,
+    });
+  if (links.google)
+    cells.push({ icon: "place", label: "Google", href: links.google });
+  if (links.website)
+    cells.push({ icon: "language", label: "Website", href: links.website });
+  if (links.yelp)
+    cells.push({ icon: "rate_review", label: "Yelp", href: links.yelp });
+  if (restaurant.phone)
+    cells.push({
+      icon: "call",
+      label: "Call",
+      href: `tel:${restaurant.phone.replace(/[^+0-9]/g, "")}`,
+    });
+
+  if (cells.length === 0) return null;
+
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {cells.map((c) => (
+        <a
+          key={c.label}
+          href={c.href}
+          target={c.href.startsWith("tel:") ? undefined : "_blank"}
+          rel="noopener noreferrer"
+          className={`pressable inline-flex items-center gap-1.5 rounded-full py-1.5 pr-3 pl-2.5 text-xs font-bold ring-1 ring-inset ${
+            c.accent
+              ? "bg-tennis-300 text-ink ring-tennis-500/30"
+              : "bg-surface text-ink-muted ring-line"
+          }`}
+        >
+          <Icon
+            name={c.icon}
+            size={14}
+            weight={300}
+            color="currentColor"
+            variant={c.accent ? "fill" : "outline"}
+          />
+          {c.label}
+        </a>
+      ))}
     </div>
   );
 }

@@ -1,169 +1,370 @@
 import type { Restaurant } from "./types";
 
 /**
- * Curated list of restaurants in and around Jonestown, TX 78645 — pulled
- * from public listings (Yelp, Google, TripAdvisor, Restaurant Guru,
- * Restaurantji) and cross-checked. Closed and relocated spots are
- * intentionally omitted.
+ * Unified catalog of restaurants in and around Jonestown, TX 78645.
  *
- * `publicRating` records a single reputable consensus rating per spot so
- * the couple can compare their own verdict against the crowd. Source and
- * lookup date are baked in for honesty; estimates from positive sentiment
- * are marked as `tripadvisor` source where applicable.
+ * Each entry has full metadata (cuisine, area, address, public rating,
+ * outbound links). Entries with `inSeed: true` get auto-added to a new
+ * couple's map on first launch. Everything else is searchable from
+ * "Add restaurant" and the admin checklist — but isn't auto-populated.
  *
- * Couples can hide / edit / add freely from inside the app; this list is
- * just a head start so the map isn't empty on day one.
+ * Closed / relocated spots intentionally omitted (Cup of Jonestown, Quetzal
+ * TexMex, Rounders Pizzeria, Broc's Italian Market, Scratch Brew Cafe, Maria's
+ * Bar & Grill, Azul Cantina, Lago Tacos, etc).
+ *
+ * Sources: TripAdvisor / Yelp / Google / Hill Country Lakes Rentals /
+ * Restaurant Guru, cross-checked 2026.
  */
-export const SEED_RESTAURANTS: Array<
-  Pick<
+export interface CatalogEntry {
+  inSeed: boolean;
+  data: Pick<
     Restaurant,
-    "id" | "name" | "cuisine" | "area" | "address" | "notes" | "publicRating"
-  >
-> = [
-  // ---- Jonestown proper ----
+    | "id"
+    | "name"
+    | "cuisine"
+    | "area"
+    | "address"
+    | "notes"
+    | "publicRating"
+    | "links"
+    | "phone"
+    | "imageUrl"
+  >;
+}
+
+export const CATALOG: CatalogEntry[] = [
+  // ============================================================
+  // SEEDED — auto-populated for any new Jonestown couple
+  // ============================================================
   {
-    id: "bamboo-garden",
-    name: "Bamboo Garden Wok 'N' Grill",
-    cuisine: "Chinese · Wok",
-    area: "Jonestown",
-    address: "7708 Lohman Ford Rd, Ste 108B, Lago Vista, TX 78645",
-    notes: "Our first pick.",
-    publicRating: { source: "yelp", value: 4.0 },
+    inSeed: true,
+    data: {
+      id: "bamboo-garden",
+      name: "Bamboo Garden Wok 'N' Grill",
+      cuisine: "Chinese · Wok",
+      area: "Lago Vista",
+      address: "7708 Lohman Ford Rd, Ste 108B, Lago Vista, TX 78645",
+      phone: "(512) 267-7600",
+      notes: "Our first pick.",
+      publicRating: { source: "yelp", value: 4.0 },
+    },
   },
   {
-    id: "lucky-rabbit",
-    name: "The Lucky Rabbit",
-    cuisine: "Bar · Burgers · Live Music",
-    area: "Jonestown",
-    address: "18626 Ranch Rd 1431, Jonestown, TX 78645",
-    notes: "Rustic Texas, handcrafted cocktails, frozen margs.",
-    publicRating: { source: "yelp", value: 4.7, count: 939 },
+    inSeed: true,
+    data: {
+      id: "lucky-rabbit",
+      name: "The Lucky Rabbit",
+      cuisine: "Bar · Burgers · Live Music",
+      area: "Jonestown",
+      address: "18626 Ranch Rd 1431, Jonestown, TX 78645",
+      notes: "Rustic Texas, handcrafted cocktails, frozen margs.",
+      publicRating: { source: "yelp", value: 4.7, count: 939 },
+    },
   },
   {
-    id: "bajo-la-luna",
-    name: "Bajo La Luna",
-    cuisine: "Tex-Mex",
-    area: "Jonestown",
-    address: "18608 FM 1431, Jonestown, TX 78645",
-    notes: "Fajitas, enchiladas, tacos, nachos.",
-    publicRating: { source: "google", value: 4.4 },
+    inSeed: true,
+    data: {
+      id: "bajo-la-luna",
+      name: "Bajo La Luna",
+      cuisine: "Tex-Mex",
+      area: "Jonestown",
+      address: "18608 FM 1431, Jonestown, TX 78645",
+      phone: "(512) 215-9852",
+      notes: "Fajitas, enchiladas, tacos, nachos.",
+      publicRating: { source: "google", value: 4.4 },
+      links: { website: "https://bajolalunatexmex.com" },
+    },
   },
   {
-    id: "la-chaparrita",
-    name: "La Chaparrita Mexican Food",
-    cuisine: "Mexican",
-    area: "Jonestown",
-    address: "18638 FM 1431, Jonestown, TX 78645",
-    notes: "Order window inside the corner store.",
-    publicRating: { source: "google", value: 2.3, count: 21 },
+    inSeed: true,
+    data: {
+      id: "la-chaparrita",
+      name: "La Chaparrita Mexican Food",
+      cuisine: "Mexican",
+      area: "Jonestown",
+      address: "18638 FM 1431, Jonestown, TX 78645",
+      phone: "(512) 267-1041",
+      notes: "Order window inside the corner store.",
+      publicRating: { source: "google", value: 2.3, count: 21 },
+    },
   },
   {
-    id: "the-burger-bar",
-    name: "The Burger Bar",
-    cuisine: "Burgers",
-    area: "Lago Vista",
-    address: "7708 Lohman Ford Rd 202e, Lago Vista, TX 78645",
+    inSeed: true,
+    data: {
+      id: "the-burger-bar",
+      name: "The Burger Bar",
+      cuisine: "Burgers",
+      area: "Lago Vista",
+      address: "7708 Lohman Ford Rd 202e, Lago Vista, TX 78645",
+    },
   },
   {
-    id: "floating-tavern",
-    name: "Floating Tavern",
-    cuisine: "Bar · American",
-    area: "Jonestown",
+    inSeed: true,
+    data: {
+      id: "floating-tavern",
+      name: "Floating Tavern",
+      cuisine: "Bar · American",
+      area: "Jonestown",
+    },
   },
   {
-    id: "wild-hare-bar-grill",
-    name: "Wild Hare Bar & Grill",
-    cuisine: "Bar · Grill",
-    area: "Jonestown",
-    address: "7301 Maritime Pass, Jonestown, TX 78645",
-    notes: "At The Hollows Beach Club. Seasonal.",
-    publicRating: { source: "google", value: 4.7, count: 25 },
+    inSeed: true,
+    data: {
+      id: "wild-hare-bar-grill",
+      name: "Wild Hare Bar & Grill",
+      cuisine: "Bar · Grill",
+      area: "Jonestown",
+      address: "7301 Maritime Pass, Jonestown, TX 78645",
+      notes: "At The Hollows Beach Club. Seasonal.",
+      publicRating: { source: "google", value: 4.7, count: 25 },
+    },
   },
   {
-    id: "alba-wine-bar",
-    name: "Alba Wine Bar",
-    cuisine: "Wine Bar · French",
-    area: "Jonestown",
-    address: "18700 Ranch Rd 1431 Ste A, Jonestown, TX 78645",
-    notes: "Closed Mon–Tue.",
-    publicRating: { source: "yelp", value: 5.0, count: 6 },
+    inSeed: true,
+    data: {
+      id: "alba-wine-bar",
+      name: "Alba Wine Bar",
+      cuisine: "Wine Bar · French",
+      area: "Jonestown",
+      address: "18700 Ranch Rd 1431 Ste A, Jonestown, TX 78645",
+      notes: "Closed Mon–Tue.",
+      publicRating: { source: "yelp", value: 5.0, count: 6 },
+    },
   },
   {
-    id: "dominos-jonestown",
-    name: "Domino's Pizza",
-    cuisine: "Pizza · Chain",
-    area: "Jonestown",
+    inSeed: true,
+    data: {
+      id: "dominos-jonestown",
+      name: "Domino's Pizza",
+      cuisine: "Pizza · Chain",
+      area: "Lago Vista",
+      address: "7708-B Lohmans Ford, Lago Vista, TX 78645",
+      links: { website: "https://www.dominos.com" },
+    },
+  },
+  {
+    inSeed: true,
+    data: {
+      id: "the-cedar-tree",
+      name: "The Cedar Tree Mediterranean Grill & Café",
+      cuisine: "Mediterranean",
+      area: "Lago Vista",
+      address: "7708 Lohman Ford Rd, Ste 105, Lago Vista, TX 78645",
+      notes: "Turkish/Greek/Lebanese — shawarma, gyros, hummus.",
+    },
+  },
+  {
+    inSeed: true,
+    data: {
+      id: "bella-vista-lv",
+      name: "Bella Vista",
+      cuisine: "Italian",
+      area: "Lago Vista",
+      address: "7708 Lohman Ford Rd, Lago Vista, TX 78645",
+      notes: "Garlic rolls, vodka pasta, eggplant parm.",
+      publicRating: { source: "tripadvisor", value: 4.4 },
+      links: { website: "https://bellavistaoflagovista.com" },
+    },
+  },
+  {
+    inSeed: true,
+    data: {
+      id: "copperhead-grille",
+      name: "Copperhead Grill",
+      cuisine: "Burgers · Bar",
+      area: "Lago Vista",
+      address: "6115 Lohman Ford Rd, Lago Vista, TX 78645",
+      notes: "Year-round patio. Try the Copperhead burger.",
+      publicRating: { source: "google", value: 4.1 },
+    },
+  },
+  {
+    inSeed: true,
+    data: {
+      id: "island-bar-grill",
+      name: "The Island Bar & Grill",
+      cuisine: "American · Bar",
+      area: "Lago Vista",
+      address: "3404 American Drive, Lago Vista, TX 78645",
+      notes: "Lakefront. Pizza, cocktails, dogs welcome.",
+      links: { website: "https://islandbarandgrilltx.com" },
+    },
+  },
+  {
+    inSeed: true,
+    data: {
+      id: "bunker-bar-grille",
+      name: "The Bunker Bar and Grille",
+      cuisine: "Bar · Grill",
+      area: "Lago Vista",
+      address: "4616 Rimrock Dr, Lago Vista, TX 78645",
+      phone: "(512) 660-5209",
+      notes: "Onion rings, cheese curds, fried pickles.",
+      publicRating: { source: "google", value: 4.3 },
+      links: { website: "https://bunkerbargrille.com" },
+    },
+  },
+  {
+    inSeed: true,
+    data: {
+      id: "jj-bbq-burgers",
+      name: "J&J Barbeque & Burgers",
+      cuisine: "BBQ · Burgers",
+      area: "Lago Vista",
+      address: "20520 FM 1431, Lago Vista, TX 78645",
+      notes: "Pit-smoked brisket inside a gas station.",
+      publicRating: { source: "google", value: 4.2 },
+    },
+  },
+  {
+    inSeed: true,
+    data: {
+      id: "casa-mexico-truck",
+      name: "Casa Mexico",
+      cuisine: "Mexican · Food Truck",
+      area: "Lago Vista",
+      address: "7610 Lohmans Ford Rd, Lago Vista, TX 78645",
+      notes: "Affordable, generous, homemade salsas.",
+      publicRating: { source: "google", value: 4.7 },
+    },
+  },
+  {
+    inSeed: true,
+    data: {
+      id: "taqueria-lago-vista",
+      name: "Taquería Lago Vista",
+      cuisine: "Tacos · Mexican",
+      area: "Lago Vista",
+      address: "4712 Lohman Ford Rd, Lago Vista, TX 78645",
+      notes: "Inside the Chevron. Cheap, fast, breakfast tacos.",
+      publicRating: { source: "yelp", value: 4.5 },
+    },
   },
 
-  // ---- Lago Vista (also 78645) ----
+  // ============================================================
+  // CATALOG — searchable / one-tap addable but not auto-seeded
+  // ============================================================
   {
-    id: "the-cedar-tree",
-    name: "The Cedar Tree Mediterranean Grill & Café",
-    cuisine: "Mediterranean",
-    area: "Lago Vista",
-    address: "7708 Lohman Ford Rd, Ste 105, Lago Vista, TX 78645",
-    notes: "Turkish/Greek/Lebanese — shawarma, gyros, hummus.",
+    inSeed: false,
+    data: {
+      id: "rumis-tavern",
+      name: "Rumi's Tavern & Eatery",
+      cuisine: "Bar · Live Music · Food Trucks",
+      area: "Jonestown",
+      address: "18626 FM 1431, Jonestown, TX 78645",
+      phone: "(512) 267-4327",
+      notes: "Live music venue. Craft beer, wine, rotating food trucks.",
+      publicRating: { source: "google", value: 4.4 },
+      links: { website: "https://rumis1431.com" },
+    },
   },
   {
-    id: "bella-vista-lv",
-    name: "Bella Vista",
-    cuisine: "Italian",
-    area: "Lago Vista",
-    address: "7708 Lohman Ford Rd, Lago Vista, TX 78645",
-    notes: "Garlic rolls, vodka pasta, eggplant parm.",
-    publicRating: { source: "tripadvisor", value: 4.4 },
+    inSeed: false,
+    data: {
+      id: "dee-dees-tacos",
+      name: "Dee Dee's Tacos & More",
+      cuisine: "Mexican · Tacos",
+      area: "Lago Vista",
+      address: "7717 Lohman Ford Rd, Lago Vista, TX 78645",
+      phone: "(512) 267-2300",
+    },
   },
   {
-    id: "copperhead-grille",
-    name: "Copperhead Grill",
-    cuisine: "Burgers · Bar",
-    area: "Lago Vista",
-    address: "6115 Lohman Ford Rd, Lago Vista, TX 78645",
-    notes: "Year-round patio. Try the Copperhead burger.",
-    publicRating: { source: "google", value: 4.1 },
+    inSeed: false,
+    data: {
+      id: "latte-vista-cafe",
+      name: "Latte Vista Café",
+      cuisine: "Coffee · Café",
+      area: "Lago Vista",
+      address: "20520 FM 1431, Lago Vista, TX 78645",
+    },
   },
   {
-    id: "island-bar-grill",
-    name: "The Island Bar & Grill",
-    cuisine: "American · Bar",
-    area: "Lago Vista",
-    address: "3404 American Drive, Lago Vista, TX 78645",
-    notes: "Lakefront. Pizza, cocktails, dogs welcome.",
+    inSeed: false,
+    data: {
+      id: "the-taco-bar",
+      name: "The Taco Bar",
+      cuisine: "Tacos · Mexican",
+      area: "Lago Vista",
+      notes: "Casual Tex-Mex.",
+      links: { website: "https://tacobartx.com" },
+    },
   },
   {
-    id: "bunker-bar-grille",
-    name: "The Bunker Bar and Grille",
-    cuisine: "Bar · Grill",
-    area: "Lago Vista",
-    address: "4616 Rimrock Dr, Lago Vista, TX 78645",
-    notes: "Onion rings, cheese curds, fried pickles.",
-    publicRating: { source: "google", value: 4.3 },
+    inSeed: false,
+    data: {
+      id: "lago-bistro",
+      name: "Lago Bistro",
+      cuisine: "American · Bistro",
+      area: "Lago Vista",
+      address: "20520 Ranch Rd 1431, Lago Vista, TX 78645",
+    },
   },
   {
-    id: "jj-bbq-burgers",
-    name: "J&J Barbeque & Burgers",
-    cuisine: "BBQ · Burgers",
-    area: "Lago Vista",
-    address: "20520 FM 1431, Lago Vista, TX 78645",
-    notes: "Pit-smoked brisket inside a gas station.",
-    publicRating: { source: "google", value: 4.2 },
+    inSeed: false,
+    data: {
+      id: "the-grille-highland-lakes",
+      name: "The Grille at Highland Lakes",
+      cuisine: "American · Golf Club",
+      area: "Lago Vista",
+      address: "20552 Highland Lake Dr, Lago Vista, TX 78645",
+      phone: "(512) 215-2823",
+      notes: "Inside Lake Travis Country Club.",
+    },
   },
   {
-    id: "casa-mexico-truck",
-    name: "Casa Mexico",
-    cuisine: "Mexican · Food Truck",
-    area: "Lago Vista",
-    address: "7610 Lohmans Ford Rd, Lago Vista, TX 78645",
-    notes: "Affordable, generous, homemade salsas.",
-    publicRating: { source: "google", value: 4.7 },
+    inSeed: false,
+    data: {
+      id: "lago-vista-golf-grill",
+      name: "Lago Vista Golf & Grill",
+      cuisine: "American · Golf",
+      area: "Lago Vista",
+      address: "4616 Rimrock Dr, Lago Vista, TX 78645",
+      phone: "(512) 267-1112",
+    },
   },
   {
-    id: "taqueria-lago-vista",
-    name: "Taquería Lago Vista",
-    cuisine: "Tacos · Mexican",
-    area: "Lago Vista",
-    address: "4712 Lohman Ford Rd, Lago Vista, TX 78645",
-    notes: "Inside the Chevron. Cheap, fast, breakfast tacos.",
-    publicRating: { source: "yelp", value: 4.5 },
+    inSeed: false,
+    data: {
+      id: "gnarly-gar",
+      name: "Gnarly Gar — Floating Grill & Bar",
+      cuisine: "American · Bar · Lakeside",
+      area: "Lake Travis",
+      address: "18200 Lakepoint Cove, Point Venture, TX 78645",
+      phone: "(512) 284-7825",
+      notes: "Boat-up lakeside bar.",
+    },
+  },
+  {
+    inSeed: false,
+    data: {
+      id: "sonic-lago",
+      name: "Sonic Drive-In",
+      cuisine: "Fast Food · Chain",
+      area: "Lago Vista",
+      address: "20700 FM 1431, Lago Vista, TX 78645",
+      links: { website: "https://www.sonicdrivein.com" },
+    },
+  },
+  {
+    inSeed: false,
+    data: {
+      id: "taco-chango",
+      name: "Taco Chango",
+      cuisine: "Mexican · Tacos",
+      area: "Cedar Park",
+      notes: "Just south of Jonestown. Listed in case it's the spot you meant.",
+      links: { website: "https://www.tacochango.com" },
+    },
   },
 ];
+
+/** The auto-seeded subset — only entries with inSeed: true. */
+export const SEED_RESTAURANTS: Array<CatalogEntry["data"]> = CATALOG.filter(
+  (e) => e.inSeed,
+).map((e) => e.data);
+
+/** Full catalog data, for autocomplete and the admin checklist. */
+export const CATALOG_ENTRIES: Array<CatalogEntry["data"]> = CATALOG.map(
+  (e) => e.data,
+);

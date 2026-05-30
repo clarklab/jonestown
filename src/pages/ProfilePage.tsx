@@ -216,6 +216,23 @@ export function ProfilePage() {
             label="Switch user"
             description="Toggle between the two of you above."
           />
+          <a
+            href="/admin"
+            className="pressable flex items-center gap-3 rounded-2xl bg-surface p-3 text-left ring-1 ring-inset ring-line"
+          >
+            <span className="flex size-10 items-center justify-center rounded-xl bg-tennis-200 ring-1 ring-inset ring-tennis-500/30">
+              <Icon name="checklist" size={22} color="var(--color-ink)" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-bold text-ink">
+                Catalog
+              </span>
+              <span className="block text-xs text-ink-dim">
+                Every spot we've found — tap to add what's missing.
+              </span>
+            </span>
+            <Icon name="chevron_right" size={22} color="var(--color-ink-faint)" />
+          </a>
           <button
             type="button"
             onClick={handleExport}

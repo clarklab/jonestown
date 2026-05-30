@@ -9,6 +9,7 @@ import { LogPage } from "./pages/LogPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { AddRestaurantPage } from "./pages/AddRestaurantPage";
 import { AddDishPage } from "./pages/AddDishPage";
+import { AdminPage } from "./pages/AdminPage";
 import { ClaimPage } from "./pages/ClaimPage";
 import { JoinPage } from "./pages/JoinPage";
 import { LandingPage } from "./pages/LandingPage";
@@ -89,6 +90,7 @@ export function App() {
               <Route path="/r/:id/dish/:visitId" element={<AddDishPage />} />
               <Route path="/add" element={<AddVisitPage />} />
               <Route path="/add/restaurant" element={<AddRestaurantPage />} />
+              <Route path="/admin" element={<AdminPage />} />
               <Route path="/log" element={<LogPage />} />
               <Route path="/me" element={<ProfilePage />} />
               <Route path="/claim" element={<ClaimPage />} />

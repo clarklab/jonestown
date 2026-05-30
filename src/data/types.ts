@@ -107,6 +107,17 @@ export interface PublicRating {
   count?: number; // number of reviews, if known
 }
 
+export interface RestaurantLinks {
+  /** Google Maps profile URL (or Google place URL). */
+  google?: string;
+  /** Official website. */
+  website?: string;
+  /** Online ordering link — DoorDash, Toast, ChowNow, the restaurant's own. */
+  order?: string;
+  /** Optional Yelp page. */
+  yelp?: string;
+}
+
 export interface Restaurant {
   id: string;
   coupleId?: string; // set on save; legacy records may lack it
@@ -118,6 +129,12 @@ export interface Restaurant {
   hidden?: boolean;
   /** Aggregated public score from Google / Yelp / TripAdvisor — for comparison only. */
   publicRating?: PublicRating;
+  /** Outbound links — Google profile, website, online ordering. */
+  links?: RestaurantLinks;
+  /** Phone number, raw or formatted. Renders as a tap-to-call. */
+  phone?: string;
+  /** Optional hero image URL — overrides the placeholder when present. */
+  imageUrl?: string;
   createdAt: number;
   updatedAt: number;
 }
