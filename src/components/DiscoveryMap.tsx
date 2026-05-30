@@ -1,34 +1,34 @@
 import "leaflet/dist/leaflet.css";
-import { useEffect, useMemo, useRef } from "react";
-import { MapContainer, TileLayer, useMap } from "react-leaflet";
-import type { LatLngBoundsExpression, Map as LeafletMap } from "leaflet";
+import { useMemo } from "react";
+import {
+  CircleMarker,
+  MapContainer,
+  Polygon,
+  Polyline,
+  TileLayer,
+  Tooltip,
+  useMapEvents,
+} from "react-leaflet";
+import type { LatLngBoundsExpression, LatLngLiteral } from "leaflet";
 
-export interface MapBounds {
-  /** "south,west,north,east" — what Overpass wants and what we feed back to Claude. */
-  bbox: string;
-  south: number;
-  west: number;
-  north: number;
-  east: number;
-  /** Center, for Google Maps deep-link convenience. */
-  center: { lat: number; lon: number };
-  /** Approximate zoom level the user has the map at. */
-  zoom: number;
-}
+export type Vertex = LatLngLiteral;
 
 /**
- * Bounds picker. The map's *visible viewport* is the selection — pan / zoom
- * to frame the area you care about, and the parent gets a `MapBounds`
- * callback every time the view changes. No live queries; this just captures
- * a region so you can paste it back to Claude for a research pass.
+ * Polygon picker. Tap the map to drop vertices in order. Three+ vertices
+ * shows a filled polygon; the parent gets the full vertex list on every
+ * tap so it can show a live readout and Copy button.
  *
- * Default view frames Jonestown + Lago Vista + the north side of Lake Travis.
+ * Touch behavior: a tap (no drag) adds a vertex. Two-finger pinch / drag
+ * still pans + zooms. Double-tap-zoom is disabled so we don't accidentally
+ * zoom while building.
  */
 export function DiscoveryMap({
-  onBoundsChange,
+  vertices,
+  onVertexAdd,
   className = "",
 }: {
-  onBoundsChange?: (b: MapBounds) => void;
+  vertices: Vertex[];
+  onVertexAdd: (v: Vertex) => void;
   className?: string;
 }) {
   const initialBounds: LatLngBoundsExpression = useMemo(
@@ -47,6 +47,7 @@ export function DiscoveryMap({
         bounds={initialBounds}
         zoomControl
         scrollWheelZoom
+        doubleClickZoom={false}
         style={{
           width: "100%",
           height: "100%",
@@ -57,106 +58,147 @@ export function DiscoveryMap({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <Crosshair />
-        <BoundsReporter onBoundsChange={onBoundsChange} />
+        <ClickHandler onAdd={onVertexAdd} />
+        <PolygonLayer vertices={vertices} />
       </MapContainer>
       <div className="pointer-events-none absolute inset-x-3 bottom-3 z-[400] text-center">
         <span className="inline-block rounded-full bg-paper/90 px-3 py-1 text-[10px] font-bold tracking-[0.16em] text-ink-muted uppercase ring-1 ring-inset ring-line backdrop-blur-sm">
-          Pan & zoom to frame your area
+          {vertices.length === 0
+            ? "Tap to drop a corner"
+            : vertices.length < 3
+              ? `${vertices.length} of 3 minimum`
+              : `${vertices.length} corners · tap to add more`}
         </span>
       </div>
     </div>
   );
 }
 
-/**
- * Subtle crosshair drawn over the map center so the user has something to
- * orient against while panning. Purely cosmetic.
- */
-function Crosshair() {
-  return (
-    <div
-      className="pointer-events-none absolute inset-0 z-[399] flex items-center justify-center"
-      aria-hidden="true"
-    >
-      <div className="relative size-6">
-        <div className="absolute top-1/2 left-0 h-px w-full -translate-y-1/2 bg-ink/30" />
-        <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-ink/30" />
-        <div className="absolute top-1/2 left-1/2 size-1.5 -translate-1/2 rounded-full bg-tennis-300 ring-1 ring-ink/40" />
-      </div>
-    </div>
-  );
+function ClickHandler({ onAdd }: { onAdd: (v: Vertex) => void }) {
+  useMapEvents({
+    click(e) {
+      onAdd({ lat: round5(e.latlng.lat), lng: round5(e.latlng.lng) });
+    },
+  });
+  return null;
 }
 
-/** Reports the current viewport bounds to the parent every time the map
- *  finishes a move. Fires once on mount so consumers see the initial state. */
-function BoundsReporter({
-  onBoundsChange,
-}: {
-  onBoundsChange?: (b: MapBounds) => void;
-}) {
-  const map = useMap();
-  const lastBboxRef = useRef<string>("");
+function PolygonLayer({ vertices }: { vertices: Vertex[] }) {
+  const fill = "var(--color-tennis-300)";
+  const stroke = "oklch(0.46 0.13 126)";
 
-  const emit = (m: LeafletMap) => {
-    const b = m.getBounds();
-    const south = round5(b.getSouth());
-    const west = round5(b.getWest());
-    const north = round5(b.getNorth());
-    const east = round5(b.getEast());
-    const bbox = `${south},${west},${north},${east}`;
-    if (bbox === lastBboxRef.current) return;
-    lastBboxRef.current = bbox;
-    const c = m.getCenter();
-    onBoundsChange?.({
-      bbox,
-      south,
-      west,
-      north,
-      east,
-      center: { lat: round5(c.lat), lon: round5(c.lng) },
-      zoom: m.getZoom(),
-    });
-  };
-
-  useEffect(() => {
-    emit(map);
-    const handler = () => emit(map);
-    map.on("moveend", handler);
-    map.on("zoomend", handler);
-    return () => {
-      map.off("moveend", handler);
-      map.off("zoomend", handler);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map]);
-
-  return null;
+  return (
+    <>
+      {vertices.length >= 3 ? (
+        <Polygon
+          positions={vertices}
+          pathOptions={{
+            color: stroke,
+            weight: 2.5,
+            fillColor: fill,
+            fillOpacity: 0.28,
+          }}
+        />
+      ) : null}
+      {vertices.length === 2 ? (
+        <Polyline
+          positions={vertices}
+          pathOptions={{ color: stroke, weight: 2, dashArray: "4 6" }}
+        />
+      ) : null}
+      {vertices.map((v, i) => (
+        <CircleMarker
+          key={i}
+          center={v}
+          radius={i === vertices.length - 1 ? 7 : 5}
+          pathOptions={{
+            color: stroke,
+            weight: 2,
+            fillColor: i === vertices.length - 1 ? fill : "var(--color-paper)",
+            fillOpacity: 1,
+          }}
+        >
+          <Tooltip
+            direction="top"
+            offset={[0, -6]}
+            opacity={0.9}
+            permanent={i === 0 && vertices.length < 3}
+          >
+            {i === 0 && vertices.length < 3 ? "Start" : `#${i + 1}`}
+          </Tooltip>
+        </CircleMarker>
+      ))}
+    </>
+  );
 }
 
 function round5(n: number) {
   return Math.round(n * 1e5) / 1e5;
 }
 
+/* ---- helpers consumed by the admin page ---- */
+
+export function polygonCentroid(vertices: Vertex[]): Vertex | null {
+  if (vertices.length === 0) return null;
+  if (vertices.length === 1) return vertices[0];
+  // Simple average — close enough for "where roughly is this".
+  let lat = 0;
+  let lng = 0;
+  for (const v of vertices) {
+    lat += v.lat;
+    lng += v.lng;
+  }
+  return { lat: round5(lat / vertices.length), lng: round5(lng / vertices.length) };
+}
+
+export function polygonBbox(vertices: Vertex[]): {
+  south: number;
+  west: number;
+  north: number;
+  east: number;
+} | null {
+  if (vertices.length === 0) return null;
+  let south = Infinity;
+  let west = Infinity;
+  let north = -Infinity;
+  let east = -Infinity;
+  for (const v of vertices) {
+    if (v.lat < south) south = v.lat;
+    if (v.lat > north) north = v.lat;
+    if (v.lng < west) west = v.lng;
+    if (v.lng > east) east = v.lng;
+  }
+  return {
+    south: round5(south),
+    west: round5(west),
+    north: round5(north),
+    east: round5(east),
+  };
+}
+
 /**
- * Format a MapBounds payload as a self-contained chat message: bbox, the
- * area's center, and links Claude can open to see what you framed.
+ * Format the polygon as a self-contained chat prompt Claude can act on.
+ * Includes the vertex list, a fallback bbox, a centroid, and an OSM URL
+ * deep-linked to the centroid so Claude can see what was framed.
  */
-export function formatBoundsForClaude(b: MapBounds): string {
+export function formatPolygonForClaude(vertices: Vertex[]): string {
+  const c = polygonCentroid(vertices);
+  const b = polygonBbox(vertices);
+  if (!c || !b || vertices.length < 3) {
+    return "Need at least 3 vertices for a polygon.";
+  }
   const osm = `https://www.openstreetmap.org/?bbox=${b.west},${b.south},${b.east},${b.north}`;
-  const gmaps = `https://www.google.com/maps/@${b.center.lat},${b.center.lon},${Math.round(b.zoom)}z`;
+  const gmaps = `https://www.google.com/maps/@${c.lat},${c.lng},13z`;
+  const vertexLines = vertices.map((v, i) => `  ${i + 1}. ${v.lat}, ${v.lng}`).join("\n");
   return [
-    "Find more restaurants in this bounding box. Add anything new to the catalog (CATALOG in src/data/seed.ts) with full metadata, then commit + push.",
+    "Find more restaurants inside this polygon. For each candidate's address, only include it if its coordinates fall inside the polygon (a bbox check would include a lot of water / unrelated land). Add anything new to CATALOG in src/data/seed.ts with full metadata, then commit + push.",
     "",
-    `bbox: ${b.bbox}   (south, west, north, east)`,
-    `center: ${b.center.lat}, ${b.center.lon}`,
+    `polygon (${vertices.length} vertices, lat,lng):`,
+    vertexLines,
+    "",
+    `bbox: ${b.south},${b.west},${b.north},${b.east}   (south, west, north, east — for reference only)`,
+    `center: ${c.lat}, ${c.lng}`,
     `osm: ${osm}`,
     `gmaps: ${gmaps}`,
   ].join("\n");
-}
-
-/** Used briefly during the older live-query flow. Kept as a re-export so
- *  any straggling import doesn't break the build. */
-export function useMapBboxChange(_handler: (bbox: string) => void) {
-  // no-op
 }

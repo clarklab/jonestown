@@ -10,8 +10,9 @@ import { CATALOG_ENTRIES } from "~/data/seed";
 import type { Restaurant } from "~/data/types";
 import {
   DiscoveryMap,
-  formatBoundsForClaude,
-  type MapBounds,
+  formatPolygonForClaude,
+  polygonCentroid,
+  type Vertex,
 } from "~/components/DiscoveryMap";
 
 type Filter = "missing" | "added" | "all";
@@ -275,22 +276,34 @@ function LinkChips({
  * catalog (built by Claude during a chat session) is higher quality.
  */
 function DiscoverySection() {
-  const [bounds, setBounds] = useState<MapBounds | null>(null);
+  const [vertices, setVertices] = useState<Vertex[]>([]);
   const [copied, setCopied] = useState(false);
   const toast = useToast();
 
+  const ready = vertices.length >= 3;
+  const center = polygonCentroid(vertices);
+
+  const handleAdd = (v: Vertex) => {
+    setVertices((vs) => [...vs, v]);
+  };
+  const handleUndo = () => {
+    setVertices((vs) => vs.slice(0, -1));
+  };
+  const handleClear = () => {
+    setVertices([]);
+  };
   const handleCopy = async () => {
-    if (!bounds) return;
-    const text = formatBoundsForClaude(bounds);
+    if (!ready) return;
+    const text = formatPolygonForClaude(vertices);
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      toast.show("Bounds copied — paste in chat with Claude", {
+      toast.show("Polygon copied — paste in chat with Claude", {
         icon: "content_copy",
       });
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.show("Clipboard blocked — copy manually below", {
+      toast.show("Clipboard blocked — copy from the preview below", {
         icon: "warning",
       });
     }
@@ -305,62 +318,95 @@ function DiscoverySection() {
         Find more spots in town.
       </h2>
       <p className="mt-1 text-xs text-ink-muted">
-        Pan and zoom to frame the area you want researched. Copy the
-        bounds and paste them to Claude — Claude does the lookup and
-        pushes the catalog update.
+        Tap the map to draw a polygon around the area you want researched —
+        wrap it around the lake / your side of the river / whatever shape
+        fits. Three corners minimum. Then copy and paste it to Claude.
       </p>
 
       <div className="mt-3 aspect-[5/4] w-full">
-        <DiscoveryMap onBoundsChange={setBounds} className="h-full w-full" />
+        <DiscoveryMap
+          vertices={vertices}
+          onVertexAdd={handleAdd}
+          className="h-full w-full"
+        />
+      </div>
+
+      <div className="mt-3 flex gap-2">
+        <button
+          type="button"
+          onClick={handleUndo}
+          disabled={vertices.length === 0}
+          className="pressable inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-2 text-xs font-bold text-ink ring-1 ring-inset ring-line disabled:opacity-40"
+        >
+          <Icon name="undo" size={14} weight={300} color="currentColor" />
+          Undo
+        </button>
+        <button
+          type="button"
+          onClick={handleClear}
+          disabled={vertices.length === 0}
+          className="pressable inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-2 text-xs font-bold text-ink ring-1 ring-inset ring-line disabled:opacity-40"
+        >
+          <Icon name="restart_alt" size={14} weight={300} color="currentColor" />
+          Clear
+        </button>
+        <button
+          type="button"
+          onClick={handleCopy}
+          disabled={!ready}
+          className="pressable ml-auto inline-flex items-center gap-1.5 rounded-full bg-tennis-300 px-3 py-2 text-xs font-bold text-ink ring-1 ring-inset ring-tennis-500/30 disabled:opacity-40"
+        >
+          <Icon
+            name={copied ? "check" : "content_copy"}
+            size={14}
+            weight={300}
+            color="var(--color-ink)"
+          />
+          {copied ? "Copied" : "Copy for Claude"}
+        </button>
       </div>
 
       <div className="mt-3 rounded-2xl bg-surface-2 p-3 ring-1 ring-inset ring-line">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-bold tracking-[0.18em] text-ink-dim uppercase">
-              Current bounds
+        <p className="text-[10px] font-bold tracking-[0.18em] text-ink-dim uppercase">
+          Current polygon
+        </p>
+        {vertices.length === 0 ? (
+          <p className="mt-1 text-[11px] text-ink-faint">
+            Tap the map to drop your first corner.
+          </p>
+        ) : (
+          <>
+            <p className="mt-0.5 font-mono text-[11px] text-ink">
+              {vertices.length} corner{vertices.length === 1 ? "" : "s"}
+              {center
+                ? ` · center ${center.lat}, ${center.lng}`
+                : ""}
             </p>
-            <p className="mt-0.5 truncate font-mono text-[11px] text-ink">
-              {bounds ? bounds.bbox : "Pan the map to set bounds…"}
-            </p>
-            {bounds ? (
-              <p className="text-[10px] text-ink-faint">
-                Center {bounds.center.lat}, {bounds.center.lon} · zoom{" "}
-                {bounds.zoom}
+            {!ready ? (
+              <p className="mt-0.5 text-[10px] text-ink-faint">
+                Need at least 3 to make a shape.
               </p>
             ) : null}
-          </div>
-          <button
-            type="button"
-            onClick={handleCopy}
-            disabled={!bounds}
-            className="pressable inline-flex items-center gap-1.5 rounded-full bg-tennis-300 px-3 py-2 text-xs font-bold text-ink ring-1 ring-inset ring-tennis-500/30 disabled:opacity-40"
-          >
-            <Icon
-              name={copied ? "check" : "content_copy"}
-              size={14}
-              weight={300}
-              color="var(--color-ink)"
-            />
-            {copied ? "Copied" : "Copy for Claude"}
-          </button>
-        </div>
-        <details className="mt-2 group">
-          <summary className="cursor-pointer list-none text-[10px] font-bold tracking-wide text-ink-dim uppercase group-open:text-ink-muted">
-            <span className="inline-flex items-center gap-1">
-              <Icon
-                name="chevron_right"
-                size={12}
-                color="currentColor"
-                className="transition-transform group-open:rotate-90"
-              />
-              Preview message
-            </span>
-          </summary>
-          <pre className="mt-2 max-h-40 overflow-auto rounded-xl bg-ink p-2.5 font-mono text-[10px] leading-snug whitespace-pre-wrap text-paper/90">
-            {bounds ? formatBoundsForClaude(bounds) : "Pan the map first."}
-          </pre>
-        </details>
+            <details className="mt-2 group">
+              <summary className="cursor-pointer list-none text-[10px] font-bold tracking-wide text-ink-dim uppercase group-open:text-ink-muted">
+                <span className="inline-flex items-center gap-1">
+                  <Icon
+                    name="chevron_right"
+                    size={12}
+                    color="currentColor"
+                    className="transition-transform group-open:rotate-90"
+                  />
+                  Preview message
+                </span>
+              </summary>
+              <pre className="mt-2 max-h-40 overflow-auto rounded-xl bg-ink p-2.5 font-mono text-[10px] leading-snug whitespace-pre-wrap text-paper/90">
+                {ready
+                  ? formatPolygonForClaude(vertices)
+                  : "Add at least one more corner."}
+              </pre>
+            </details>
+          </>
+        )}
       </div>
     </div>
   );
