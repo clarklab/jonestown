@@ -408,14 +408,21 @@ export const CATALOG: CatalogEntry[] = [
       links: { website: "https://www.sonicdrivein.com" },
     },
   },
+  // "Taco Changa" → this is the spot: Taco Chango, the family-run homestyle
+  // Mexican food truck that opened on the Lake Travis north shore in Jan 2024.
+  // Promoted to seeded with full scraped metadata so it lands on the map.
   {
-    inSeed: false,
+    inSeed: true,
     data: {
       id: "taco-chango",
+      coords: { lat: 30.5115, lng: -97.8856 },
       name: "Taco Chango",
-      cuisine: "Mexican · Tacos",
-      area: "Cedar Park",
-      notes: "Just south of Jonestown. Listed in case it's the spot you meant.",
+      cuisine: "Mexican · Tacos · Food Truck",
+      area: "Leander",
+      address: "12900 Trails End Rd, Leander, TX 78641",
+      phone: "(512) 781-6763",
+      notes:
+        "Family-owned homestyle Mexican food truck. Signature crunchy Taco Chango plate, plus gorditas, flautas, quesobirria, and all-day breakfast tacos. Outdoor seating, order online for pickup.",
       links: { website: "https://www.tacochango.com" },
     },
   },
