@@ -53,7 +53,7 @@ export function HomePage() {
 
   return (
     <div className="relative">
-      <Header transparent />
+      <Header />
 
       {/* Map hero */}
       <section className="relative isolate -mt-16 px-4 pt-20 pb-4">
