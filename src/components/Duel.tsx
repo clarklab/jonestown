@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { USERS, type UserId, type VerdictMeta } from "~/data/types";
 import { UserStars } from "./Stars";
 import { Icon } from "./Icon";
+import { formatAvgRating } from "~/utils/format";
 
 export function VerdictBadge({
   verdict,
@@ -153,7 +154,7 @@ function DuelSide({
           className={`display-tight tabular-nums ${numClass}`}
           style={{ color: value !== undefined ? "var(--color-ink)" : "var(--color-ink-faint)" }}
         >
-          {value !== undefined ? value.toFixed(1) : "—"}
+          {value !== undefined ? formatAvgRating(value) : "—"}
         </span>
         {value !== undefined ? (
           <span className="text-xs font-semibold text-ink-faint">/5</span>
@@ -223,7 +224,7 @@ function DuelCenter({
             >
               <div className="flex flex-col items-center leading-none">
                 <span className="display-tight tabular-nums text-[22px]">
-                  {(verdict.combined ?? 0).toFixed(1)}
+                  {formatAvgRating(verdict.combined ?? 0)}
                 </span>
                 <span className="text-[8px] font-bold tracking-[0.16em] text-ink-muted uppercase">
                   Both
@@ -290,7 +291,7 @@ function ScorePill({ user, value }: { user: UserId; value: number | undefined })
         className="text-xs font-bold tabular-nums"
         style={{ color: value !== undefined ? "var(--color-ink)" : "var(--color-ink-faint)" }}
       >
-        {value !== undefined ? value.toFixed(1) : "—"}
+        {value !== undefined ? formatAvgRating(value) : "—"}
       </span>
     </div>
   );

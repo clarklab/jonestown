@@ -47,3 +47,19 @@ export function fromDateInputValue(value: string): number {
   date.setHours(12, 0, 0, 0);
   return date.getTime();
 }
+
+/**
+ * Render a star-rating number, preferring 1 decimal when the value is a
+ * whole or half (3.0, 3.5, 4.0) and surfacing 2 decimals only when needed
+ * to convey the actual averaged value (e.g. avg(3.5, 4.0) = "3.75").
+ *
+ * Use for AGGREGATED per-user ratings; individual visits should keep
+ * `toFixed(1)` since their values come from a half-star picker.
+ */
+export function formatAvgRating(r: number): string {
+  // Round to 2 decimals to kill float noise (e.g. 3.7333333333).
+  const rounded = Math.round(r * 100) / 100;
+  // If the value is whole or already a clean half/tenth, show 1 decimal.
+  if (Math.round(rounded * 10) === rounded * 10) return rounded.toFixed(1);
+  return rounded.toFixed(2);
+}

@@ -14,6 +14,7 @@ import {
 } from "~/data/hooks";
 import { memberOf, type UserId } from "~/data/types";
 import { exportAll, getDb, setUnlocked } from "~/data/db";
+import { formatAvgRating } from "~/utils/format";
 
 export function ProfilePage() {
   const [user, setUser] = useCurrentUser();
@@ -155,7 +156,7 @@ export function ProfilePage() {
         <Stat label="Restaurants" value={ratedCount} />
         <Stat
           label="Avg rating"
-          value={avgRating !== undefined ? avgRating.toFixed(1) : "—"}
+          value={avgRating !== undefined ? formatAvgRating(avgRating) : "—"}
         />
       </section>
 

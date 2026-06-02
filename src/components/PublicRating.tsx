@@ -1,6 +1,7 @@
 import { Icon } from "./Icon";
 import { Stars } from "./Stars";
 import type { PublicRating, VerdictMeta } from "~/data/types";
+import { formatAvgRating } from "~/utils/format";
 
 const SOURCE_LABEL: Record<PublicRating["source"], string> = {
   google: "Google",
@@ -67,10 +68,10 @@ export function VsPublic({
     callout = `Same as the crowd — within a quarter star.`;
     tone = "match";
   } else if (delta > 0) {
-    callout = `${absDelta.toFixed(1)} stars louder than the crowd.`;
+    callout = `${formatAvgRating(absDelta)} stars louder than the crowd.`;
     tone = "louder";
   } else {
-    callout = `${absDelta.toFixed(1)} stars tougher than the crowd.`;
+    callout = `${formatAvgRating(absDelta)} stars tougher than the crowd.`;
     tone = "tougher";
   }
 
@@ -150,7 +151,11 @@ function Half({
               value !== undefined ? "var(--color-ink)" : "var(--color-ink-faint)",
           }}
         >
-          {value !== undefined ? value.toFixed(1) : "—"}
+          {value !== undefined
+            ? isPublic
+              ? value.toFixed(1)
+              : formatAvgRating(value)
+            : "—"}
         </span>
         {value !== undefined ? (
           <span className="text-xs font-bold text-ink-faint">/5</span>

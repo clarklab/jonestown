@@ -15,7 +15,7 @@ import {
   useRestaurant,
   useVisits,
 } from "~/data/hooks";
-import { formatDate, formatRelativeDate } from "~/utils/format";
+import { formatAvgRating, formatDate, formatRelativeDate } from "~/utils/format";
 import {
   USERS,
   type Dish,
@@ -105,8 +105,8 @@ export function RestaurantPage() {
                 {verdict.status === "unanimous"
                   ? "agreed within ½ star"
                   : verdict.status === "split"
-                    ? `split by ${verdict.gap?.toFixed(1)} stars`
-                    : `divided by ${verdict.gap?.toFixed(1)} stars`}
+                    ? `split by ${verdict.gap !== undefined ? formatAvgRating(verdict.gap) : "?"} stars`
+                    : `divided by ${verdict.gap !== undefined ? formatAvgRating(verdict.gap) : "?"} stars`}
               </p>
             </div>
           ) : verdict.status === "solo" && missingUser ? (
@@ -355,7 +355,9 @@ function TakeCard({
           <span className="text-sm font-bold text-ink">{u.name}</span>
         </div>
         <span className="text-[10px] font-bold tracking-[0.16em] text-ink-faint uppercase">
-          {visitCount === 0 ? "Not yet" : `${visitCount} visits`}
+          {visitCount === 0
+            ? "Not yet"
+            : `${visitCount} visit${visitCount === 1 ? "" : "s"}`}
         </span>
       </div>
       <div className="mt-3 flex items-baseline gap-2">
@@ -365,7 +367,7 @@ function TakeCard({
             color: rating !== undefined ? "var(--color-ink)" : "var(--color-ink-faint)",
           }}
         >
-          {rating !== undefined ? rating.toFixed(1) : "—"}
+          {rating !== undefined ? formatAvgRating(rating) : "—"}
         </p>
         {rating !== undefined ? (
           <span className="text-sm font-bold text-ink-faint">/5</span>
@@ -374,6 +376,11 @@ function TakeCard({
       <div className="mt-1">
         <UserStars user={user} value={rating} size="md" />
       </div>
+      {visitCount > 1 ? (
+        <p className="mt-1.5 text-[10px] font-bold tracking-[0.14em] text-ink-faint uppercase">
+          Avg across {visitCount} visits
+        </p>
+      ) : null}
       {topDish ? (
         <p className="mt-3 text-xs font-medium text-ink-muted">
           <span className="font-bold text-ink">Top dish:</span>{" "}
