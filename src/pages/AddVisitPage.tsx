@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { Header } from "~/components/Header";
 import { Icon } from "~/components/Icon";
+import { ScreenView, useScreen } from "~/components/Screen";
 import { StarInput } from "~/components/Stars";
 import { CompactPhotoButton } from "~/components/PhotoCapture";
 import { useToast } from "~/components/Toast";
@@ -33,9 +34,9 @@ interface PendingDish {
 export function AddVisitPage() {
   const { id: restaurantIdParam } = useParams<{ id: string }>();
   const restaurants = useRestaurants();
-  const navigate = useNavigate();
+  const screen = useScreen("card");
   const couple = useCurrentCouple();
-  const [user] = useCurrentUser();
+  const [user, setUser] = useCurrentUser();
   const toast = useToast();
 
   const [restaurantId, setRestaurantId] = useState<string | null>(
@@ -123,7 +124,8 @@ export function AddVisitPage() {
       { icon: "check_circle" },
     );
     // Hand the destination page a hint so it can pulse the just-saved visit.
-    navigate(`/r/${restaurantId}`, {
+    // Dismiss slides the card back down before the restaurant page takes over.
+    screen.dismiss(`/r/${restaurantId}`, {
       state: { justSavedVisitId: visitId },
     });
   };
@@ -135,24 +137,30 @@ export function AddVisitPage() {
 
   if (restaurantPickerOpen) {
     return (
-      <RestaurantPicker
-        restaurants={restaurants}
-        onPick={(id) => {
-          setRestaurantId(id);
-          setRestaurantPickerOpen(false);
-        }}
-        onCancel={() => {
-          if (!restaurantId) navigate(backTo);
-          else setRestaurantPickerOpen(false);
-        }}
-      />
+      <ScreenView screen={screen}>
+        <RestaurantPicker
+          restaurants={restaurants}
+          onPick={(id) => {
+            setRestaurantId(id);
+            setRestaurantPickerOpen(false);
+          }}
+          onCancel={() => {
+            // No restaurant chosen yet → the picker *is* the screen, so leaving
+            // it leaves the whole card. Otherwise just close back to the form.
+            if (!restaurantId) screen.dismiss(backTo);
+            else setRestaurantPickerOpen(false);
+          }}
+        />
+      </ScreenView>
     );
   }
 
   return (
+    <ScreenView screen={screen}>
     <div className="pb-12">
       <Header
         back={backTo}
+        onBack={() => screen.dismiss(backTo)}
         title="Log a visit"
         trailing={
           <button
@@ -174,8 +182,8 @@ export function AddVisitPage() {
           onChange={() => setRestaurantPickerOpen(true)}
         />
 
-        <Section title="Logging as">
-          <UserBadge user={user} />
+        <Section title="Logging as" subtitle="Tap to switch whose half of the duel this is.">
+          <UserToggle user={user} onChange={setUser} />
         </Section>
 
         <Section title="Your rating" subtitle="Just your half of the duel.">
@@ -285,6 +293,7 @@ export function AddVisitPage() {
         </button>
       </form>
     </div>
+    </ScreenView>
   );
 }
 
@@ -310,13 +319,56 @@ function Section({
   );
 }
 
-function UserBadge({ user }: { user: UserId }) {
+/**
+ * Inline who's-reviewing switch. Tapping the other half flips the active user
+ * right here on the form — no need to dip back into the header picker. The
+ * highlight slides between the two via a shared `layoutId`.
+ */
+function UserToggle({
+  user,
+  onChange,
+}: {
+  user: UserId;
+  onChange: (id: UserId) => void;
+}) {
   const couple = useCurrentCouple();
   return (
-    <div className="inline-flex items-center gap-2 rounded-2xl bg-surface px-3 py-2 ring-1 ring-inset ring-line">
-      <UserChip id={user} size="md" />
-      <span className="text-sm font-bold text-ink">{memberOf(couple, user).name}</span>
-      <span className="text-xs text-ink-faint">switch in header</span>
+    <div
+      role="group"
+      aria-label="Logging as"
+      className="inline-flex items-center gap-1 rounded-2xl bg-surface p-1 ring-1 ring-inset ring-line"
+    >
+      {(["a", "b"] as UserId[]).map((slot) => {
+        const m = memberOf(couple, slot);
+        const active = user === slot;
+        return (
+          <button
+            key={slot}
+            type="button"
+            onClick={() => onChange(slot)}
+            aria-pressed={active}
+            className="pressable relative flex items-center gap-2 rounded-xl px-3 py-2"
+          >
+            {active ? (
+              <motion.span
+                layoutId="user-toggle-active"
+                transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                className="absolute inset-0 rounded-xl bg-tennis-200 ring-1 ring-inset ring-tennis-500/30"
+              />
+            ) : null}
+            <span className="relative z-10">
+              <UserChip id={slot} size="sm" />
+            </span>
+            <span
+              className={`relative z-10 text-sm font-bold transition-colors ${
+                active ? "text-ink" : "text-ink-faint"
+              }`}
+            >
+              {m.name}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }

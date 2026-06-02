@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Header } from "~/components/Header";
 import { Icon } from "~/components/Icon";
+import { ScreenView, useScreen } from "~/components/Screen";
 import { RestaurantCard } from "~/components/RestaurantCard";
 import { ShuffleModal } from "~/components/ShuffleModal";
 import { TownMap } from "~/components/TownMap";
@@ -29,6 +30,7 @@ const SORT_LABELS: Record<SortKey, string> = {
 };
 
 export function HomePage() {
+  const screen = useScreen("page");
   const couple = useCurrentCouple();
   const aggs = useAggregates();
   const [sort, setSort] = useState<SortKey>("all");
@@ -52,6 +54,7 @@ export function HomePage() {
   }, [aggs.list, sort, query]);
 
   return (
+    <ScreenView screen={screen}>
     <div className="relative">
       <Header />
 
@@ -180,6 +183,7 @@ export function HomePage() {
         onClose={() => setShuffleOpen(false)}
       />
     </div>
+    </ScreenView>
   );
 }
 

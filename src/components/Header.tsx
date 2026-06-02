@@ -10,6 +10,7 @@ import { memberOf, type UserId } from "~/data/types";
 export function Header({
   title,
   back,
+  onBack,
   trailing,
   transparent = false,
 }: {
@@ -23,6 +24,12 @@ export function Header({
    *   - the post-save redirect doesn't strand Back on a stale form entry.
    */
   back?: string;
+  /**
+   * Optional override for the Back tap. Pages that animate themselves out
+   * (see `useScreen`) pass their `dismiss` here so the exit transition plays
+   * before the route changes; without it the arrow just navigates to `back`.
+   */
+  onBack?: () => void;
   trailing?: React.ReactNode;
   transparent?: boolean;
 }) {
@@ -41,7 +48,7 @@ export function Header({
       {back ? (
         <button
           type="button"
-          onClick={() => navigate(back)}
+          onClick={onBack ?? (() => navigate(back))}
           aria-label="Back"
           className="pressable relative -ml-1 flex size-10 items-center justify-center rounded-full bg-surface ring-1 ring-inset ring-line"
         >
