@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Header } from "~/components/Header";
 import { Icon } from "~/components/Icon";
+import { ScreenView, useScreen } from "~/components/Screen";
 import { Stars, UserStars } from "~/components/Stars";
 import { VerdictPill } from "~/components/PassFail";
 import { UserChip } from "~/components/UserChip";
@@ -33,6 +34,7 @@ export function RestaurantPage() {
   const dishes = useDishes({ restaurantId: id });
   const navigate = useNavigate();
   const location = useLocation();
+  const screen = useScreen("page");
   const [currentUser] = useCurrentUser();
   const justSavedVisitId = (location.state as { justSavedVisitId?: string } | null)
     ?.justSavedVisitId;
@@ -56,8 +58,9 @@ export function RestaurantPage() {
       : null;
 
   return (
+    <ScreenView screen={screen}>
     <div className="relative pb-12">
-      <Header back="/" transparent />
+      <Header back="/" transparent onBack={() => screen.dismiss("/")} />
 
       {/* Hero photo strip */}
       <section className="relative isolate -mt-16 h-64 overflow-hidden">
@@ -200,6 +203,7 @@ export function RestaurantPage() {
         </div>
       </section>
     </div>
+    </ScreenView>
   );
 }
 
