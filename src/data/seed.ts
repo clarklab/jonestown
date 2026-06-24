@@ -196,6 +196,24 @@ export const CATALOG: CatalogEntry[] = [
   {
     inSeed: true,
     data: {
+      id: "lakeside-subs",
+      coords: { lat: 30.451, lng: -97.9882 },
+      name: "Lakeside Subs + Bagels",
+      cuisine: "Subs · Sandwiches · Bagels",
+      area: "Lago Vista",
+      address: "7708 Lohman Ford Rd, Ste B102, Lago Vista, TX 78645",
+      phone: "(512) 243-6779",
+      notes:
+        "Locally owned since 2021. Meats sliced to order — the North Shore Ruben, the Big Boat sub, salads, fresh bagels, gluten-free options.",
+      links: {
+        website: "https://lakesidesubs.com",
+        order: "https://www.toasttab.com/local/order/lakesidesubs",
+      },
+    },
+  },
+  {
+    inSeed: true,
+    data: {
       id: "copperhead-grille",
       coords: { lat: 30.4595, lng: -97.9905 },
       name: "Copperhead Grill",
