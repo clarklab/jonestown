@@ -143,6 +143,21 @@ export const CATALOG: CatalogEntry[] = [
   {
     inSeed: true,
     data: {
+      id: "solstice",
+      coords: { lat: 30.4934, lng: -97.9169 },
+      name: "Solstice Coffee + Cocktails",
+      cuisine: "Coffee · Cocktails · Food Trucks",
+      area: "Jonestown",
+      address: "18637 FM 1431, Jonestown, TX 78645",
+      phone: "(512) 277-5472",
+      notes:
+        "Craft coffee by day, cocktails by night, rotating local food trucks. Live music under the oaks, open-air patio plus a second-story covered deck. From the Odd Duck / Whisler's team.",
+      links: { website: "https://www.solsticejonestown.com" },
+    },
+  },
+  {
+    inSeed: true,
+    data: {
       id: "dominos-jonestown",
       coords: { lat: 30.4508, lng: -97.988 },
       name: "Domino's Pizza",

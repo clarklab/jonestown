@@ -169,17 +169,7 @@ export function RestaurantPage() {
       </section>
 
       {dishes.length > 0 ? (
-        <section className="mt-8 px-5">
-          <h2 className="display text-lg text-ink">Every dish ordered</h2>
-          <p className="text-xs text-ink-dim">
-            Two-fork menu. Tap into a visit to add more.
-          </p>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            {dishes.map((d) => (
-              <DishTile key={d.id} dish={d} />
-            ))}
-          </div>
-        </section>
+        <DishGrid dishes={dishes} />
       ) : null}
 
       <section className="mt-8 px-5">
@@ -396,7 +386,75 @@ function TakeCard({
   );
 }
 
-function DishTile({ dish }: { dish: Dish }) {
+/**
+ * A unique dish on the menu, collapsing every time it was logged into one
+ * card. `count` is the number of times it was ordered; `users` is the set of
+ * forks who logged it. `lead` is the instance we render (prefers one with a
+ * photo, then the most recent).
+ */
+interface DishGroup {
+  key: string;
+  lead: Dish;
+  count: number;
+  users: UserId[];
+}
+
+/** Group dish logs by normalized name, preserving first-seen order. */
+function groupDishes(dishes: Dish[]): DishGroup[] {
+  const byName = new Map<string, Dish[]>();
+  const order: string[] = [];
+  for (const d of dishes) {
+    const key = d.name.trim().toLowerCase();
+    if (!byName.has(key)) {
+      byName.set(key, []);
+      order.push(key);
+    }
+    byName.get(key)!.push(d);
+  }
+  return order.map((key) => {
+    const items = byName.get(key)!;
+    const lead = [...items].sort(
+      (a, b) =>
+        (b.photoId ? 1 : 0) - (a.photoId ? 1 : 0) || b.createdAt - a.createdAt,
+    )[0];
+    const users = (["a", "b"] as UserId[]).filter((uid) =>
+      items.some((d) => d.userId === uid),
+    );
+    return { key, lead, count: items.length, users };
+  });
+}
+
+function DishGrid({ dishes }: { dishes: Dish[] }) {
+  const groups = groupDishes(dishes);
+  return (
+    <section className="mt-8 px-5">
+      <h2 className="display text-lg text-ink">Every dish ordered</h2>
+      <p className="text-xs text-ink-dim">
+        Two-fork menu. Tap into a visit to add more.
+      </p>
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        {groups.map((g) => (
+          <DishTile
+            key={g.key}
+            dish={g.lead}
+            count={g.count}
+            users={g.users}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function DishTile({
+  dish,
+  count,
+  users,
+}: {
+  dish: Dish;
+  count: number;
+  users: UserId[];
+}) {
   const url = usePhotoUrl(dish.photoId);
   const u = USERS[dish.userId];
   return (
@@ -427,8 +485,17 @@ function DishTile({ dish }: { dish: Dish }) {
             </span>
           </div>
         )}
-        <div className="absolute top-1.5 right-1.5">
-          <UserChip id={dish.userId} size="xs" />
+        {count > 1 ? (
+          <div className="absolute top-1.5 left-1.5 flex items-center gap-0.5 rounded-full bg-ink/75 py-0.5 pr-2 pl-1.5 text-[11px] font-bold text-paper tabular-nums backdrop-blur">
+            <span aria-hidden="true">×</span>
+            {count}
+            <span className="sr-only">ordered {count} times</span>
+          </div>
+        ) : null}
+        <div className="absolute top-1.5 right-1.5 flex -space-x-1.5">
+          {users.map((uid) => (
+            <UserChip key={uid} id={uid} size="xs" />
+          ))}
         </div>
       </div>
       <div className="p-3">
