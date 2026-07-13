@@ -193,7 +193,7 @@ export async function migrateLegacyData(): Promise<void> {
 }
 
 /** Bump when the seed list changes so deployed installs pick up new entries. */
-const SEED_VERSION = 8;
+const SEED_VERSION = 9;
 
 export async function ensureSeeded(coupleId: string): Promise<void> {
   const db = await getDb();

@@ -107,16 +107,6 @@ export const CATALOG: CatalogEntry[] = [
   {
     inSeed: true,
     data: {
-      id: "floating-tavern",
-      coords: { lat: 30.487, lng: -97.93 },
-      name: "Floating Tavern",
-      cuisine: "Bar · American",
-      area: "Jonestown",
-    },
-  },
-  {
-    inSeed: true,
-    data: {
       id: "wild-hare-bar-grill",
       coords: { lat: 30.4615, lng: -97.958 },
       name: "Wild Hare Bar & Grill",
@@ -208,6 +198,24 @@ export const CATALOG: CatalogEntry[] = [
       links: {
         website: "https://lakesidesubs.com",
         order: "https://www.toasttab.com/local/order/lakesidesubs",
+      },
+    },
+  },
+  {
+    inSeed: true,
+    data: {
+      id: "legacy-bbq",
+      coords: { lat: 30.4509, lng: -97.988 },
+      name: "Legacy BBQ",
+      cuisine: "BBQ · Smokehouse",
+      area: "Lago Vista",
+      address: "7708 Lohman Ford Rd, Ste E103, Lago Vista, TX 78645",
+      phone: "(512) 966-8687",
+      notes:
+        "Brisket, ribs, sausage, and smoked turkey on John Baker's original pits — pitmaster Lewis McCauley carrying on his mentor's legacy. Open 11am till sold out.",
+      links: {
+        website: "https://legacybbqlago.com",
+        order: "https://www.toasttab.com/local/order/legacy-bbq-llc",
       },
     },
   },
